@@ -1,0 +1,490 @@
+import requests
+import json
+import logging
+import time
+
+# 配置日志
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+class FeishuSheet:
+    def __init__(self, app_id, app_secret):
+        self.app_id = app_id
+        self.app_secret = app_secret
+        self.access_token = None
+        self.token_expire = 0
+        self.token_time = 0
+    
+    def get_access_token(self):
+        """
+        获取飞书 API 访问令牌
+        """
+        try:
+            url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal/"
+            headers = {"Content-Type": "application/json"}
+            payload = {
+                "app_id": self.app_id,
+                "app_secret": self.app_secret
+            }
+            response = requests.post(url, headers=headers, json=payload)
+            result = response.json()
+            
+            if result.get("code") == 0:
+                self.access_token = result.get("tenant_access_token")
+                self.token_expire = result.get("expire")
+                self.token_time = time.time()
+                logging.info("获取 access_token 成功")
+                return self.access_token
+            else:
+                logging.error(f"获取 access_token 失败: {result.get('msg')}")
+                return None
+        except Exception as e:
+            logging.error(f"获取 access_token 异常: {str(e)}")
+            return None
+    
+    def ensure_token(self):
+        """
+        确保 access_token 有效
+        """
+        # 检查 token 是否存在且未过期
+        if not self.access_token or time.time() - self.token_time > self.token_expire - 60:
+            # 提前 60 秒刷新 token，避免过期
+            return self.get_access_token()
+        return self.access_token
+    
+    def get_sheet_data(self, app_token, table_id, page_size=100, page_token="", get_all=False):
+        """
+        获取表格数据
+        app_token: 应用 token
+        table_id: 表格 ID
+        page_size: 每页数据量
+        page_token: 分页标记
+        get_all: 是否获取所有数据
+        """
+        try:
+            token = self.ensure_token()
+            if not token:
+                return None
+            
+            # 退回到v1版本API
+            url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records"
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json"
+            }
+            
+            if not get_all:
+                # 只获取一页数据
+                params = {
+                    "page_size": page_size,
+                    "page_token": page_token
+                }
+                
+                response = requests.get(url, headers=headers, params=params)
+                print(f"响应状态码: {response.status_code}")
+                print(f"响应内容: {response.text}")
+                
+                # 尝试解析响应
+                try:
+                    result = response.json()
+                    print(f"解析后的响应: {result}")
+                    
+                    if result.get("code") == 0:
+                        logging.info("获取表格数据成功")
+                        return result
+                    else:
+                        logging.error(f"获取表格数据失败: {result.get('msg')}")
+                        return None
+                except json.JSONDecodeError as e:
+                    print(f"JSON解析错误: {str(e)}")
+                    logging.error(f"获取表格数据异常: 响应不是有效的JSON格式")
+                    return None
+            else:
+                # 获取所有数据
+                all_items = []
+                current_page_token = page_token
+                
+                while True:
+                    params = {
+                        "page_size": page_size,
+                        "page_token": current_page_token
+                    }
+                    
+                    response = requests.get(url, headers=headers, params=params)
+                    print(f"响应状态码: {response.status_code}")
+                    print(f"响应内容: {response.text}")
+                    
+                    # 尝试解析响应
+                    try:
+                        result = response.json()
+                        print(f"解析后的响应: {result}")
+                        
+                        if result.get("code") == 0:
+                            data = result.get("data", {})
+                            items = data.get("items", [])
+                            
+                            # 处理 items 为 None 的情况
+                            if items is not None:
+                                all_items.extend(items)
+                            
+                            # 检查是否还有更多数据
+                            has_more = data.get("has_more", False)
+                            if not has_more:
+                                break
+                            
+                            # 获取下一页的 token
+                            current_page_token = data.get("page_token", "")
+                            if not current_page_token:
+                                break
+                        else:
+                            logging.error(f"获取表格数据失败: {result.get('msg')}")
+                            return None
+                    except json.JSONDecodeError as e:
+                        print(f"JSON解析错误: {str(e)}")
+                        logging.error(f"获取表格数据异常: 响应不是有效的JSON格式")
+                        return None
+                
+                # 构建完整的响应结果
+                full_result = {
+                    "code": 0,
+                    "data": {
+                        "items": all_items,
+                        "has_more": False,
+                        "total": len(all_items)
+                    },
+                    "msg": "success"
+                }
+                
+                logging.info(f"获取表格所有数据成功，共 {len(all_items)} 条记录")
+                return full_result
+        except Exception as e:
+            print(f"请求异常: {str(e)}")
+            logging.error(f"获取表格数据异常: {str(e)}")
+            return None
+    
+    def get_view_data(self, app_token, table_id, view_id, page_size=100, page_token="", get_all=False):
+        """
+        获取视图数据
+        app_token: 应用 token
+        table_id: 表格 ID
+        view_id: 视图 ID
+        page_size: 每页数据量
+        page_token: 分页标记
+        get_all: 是否获取所有数据
+        """
+        try:
+            token = self.ensure_token()
+            if not token:
+                return None
+            
+            # 退回到v1版本API
+            url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/views/{view_id}/records"
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json"
+            }
+            
+            if not get_all:
+                # 只获取一页数据
+                params = {
+                    "page_size": page_size,
+                    "page_token": page_token
+                }
+                
+                response = requests.get(url, headers=headers, params=params)
+                result = response.json()
+                
+                if result.get("code") == 0:
+                    logging.info("获取视图数据成功")
+                    return result
+                else:
+                    logging.error(f"获取视图数据失败: {result.get('msg')}")
+                    return None
+            else:
+                # 获取所有数据
+                all_items = []
+                current_page_token = page_token
+                
+                while True:
+                    params = {
+                        "page_size": page_size,
+                        "page_token": current_page_token
+                    }
+                    
+                    response = requests.get(url, headers=headers, params=params)
+                    result = response.json()
+                    
+                    if result.get("code") == 0:
+                        data = result.get("data", {})
+                        items = data.get("items", [])
+                        
+                        # 处理 items 为 None 的情况
+                        if items is not None:
+                            all_items.extend(items)
+                        
+                        # 检查是否还有更多数据
+                        has_more = data.get("has_more", False)
+                        if not has_more:
+                            break
+                        
+                        # 获取下一页的 token
+                        current_page_token = data.get("page_token", "")
+                        if not current_page_token:
+                            break
+                    else:
+                        logging.error(f"获取视图数据失败: {result.get('msg')}")
+                        return None
+                
+                # 构建完整的响应结果
+                full_result = {
+                    "code": 0,
+                    "data": {
+                        "items": all_items,
+                        "has_more": False,
+                        "total": len(all_items)
+                    },
+                    "msg": "success"
+                }
+                
+                logging.info(f"获取视图所有数据成功，共 {len(all_items)} 条记录")
+                return full_result
+        except Exception as e:
+            logging.error(f"获取视图数据异常: {str(e)}")
+            return None
+    
+    def create_record(self, app_token, table_id, fields, note=""):
+        """
+        创建记录
+        app_token: 应用 token
+        table_id: 表格 ID
+        fields: 字段数据，格式为 {"字段名": "值"}
+        note: 备注，可选
+        """
+        try:
+            token = self.ensure_token()
+            if not token:
+                return None
+            
+            # 退回到v1版本API
+            url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records"
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "fields": fields
+            }
+            
+            #print(f"请求URL: {url}")
+            #print(f"请求头: {headers}")
+            #print(f"请求体: {payload}")
+            
+            response = requests.post(url, headers=headers, json=payload)
+            #print(f"响应状态码: {response.status_code}")
+            #print(f"响应内容: {response.text}")
+            
+            # 尝试解析响应
+            try:
+                result = response.json()
+                #print(f"解析后的响应: {result}")
+                
+                if result.get("code") == 0:
+                    logging.info(f"创建记录成功，备注: {note}")
+                    return result
+                else:
+                    logging.error(f"创建记录失败: {result.get('msg')}，备注: {note}")
+                    return None
+            except json.JSONDecodeError as e:
+                print(f"JSON解析错误: {str(e)}")
+                logging.error(f"创建记录异常: 响应不是有效的JSON格式，备注: {note}")
+                return None
+        except Exception as e:
+            print(f"请求异常: {str(e)}")
+            logging.error(f"创建记录异常: {str(e)}")
+            return None
+    
+    def update_record(self, app_token, table_id, record_id, fields):
+        """
+        更新记录
+        app_token: 应用 token
+        table_id: 表格 ID
+        record_id: 记录 ID
+        fields: 字段数据，格式为 {"字段名": "值"}
+        """
+        try:
+            token = self.ensure_token()
+            if not token:
+                return None
+            
+            # 退回到v1版本API
+            url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records/{record_id}"
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "fields": fields
+            }
+            
+            response = requests.put(url, headers=headers, json=payload)
+            result = response.json()
+            
+            if result.get("code") == 0:
+                logging.info("更新记录成功")
+                return result
+            else:
+                logging.error(f"更新记录失败: {result.get('msg')}")
+                return None
+        except Exception as e:
+            logging.error(f"更新记录异常: {str(e)}")
+            return None
+    
+    def delete_record(self, app_token, table_id, record_id):
+        """
+        删除记录
+        app_token: 应用 token
+        table_id: 表格 ID
+        record_id: 记录 ID
+        """
+        try:
+            token = self.ensure_token()
+            if not token:
+                return None
+            
+            # 退回到v1版本API
+            url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records/{record_id}"
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json"
+            }
+            
+            response = requests.delete(url, headers=headers)
+            result = response.json()
+            
+            if result.get("code") == 0:
+                logging.info("删除记录成功")
+                return result
+            else:
+                logging.error(f"删除记录失败: {result.get('msg')}")
+                return None
+        except Exception as e:
+            logging.error(f"删除记录异常: {str(e)}")
+            return None
+    
+    def get_records_by_filter(self, app_token, table_id, filter_formula, page_size=100, page_token="", get_all=False):
+        """
+        根据条件查找记录
+        app_token: 应用 token
+        table_id: 表格 ID
+        filter_formula: 过滤公式，使用飞书表格的公式语法
+        page_size: 每页数据量
+        page_token: 分页标记
+        get_all: 是否获取所有数据
+        """
+        try:
+            token = self.ensure_token()
+            if not token:
+                return None
+            
+            # 使用v1版本API进行条件查询
+            url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records/search"
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json"
+            }
+            
+            if not get_all:
+                # 只获取一页数据
+                payload = {
+                    "page_size": page_size,
+                    "page_token": page_token
+                }
+                
+                # 添加过滤条件
+                if filter_formula:
+                    payload["filter"] = filter_formula
+                
+                response = requests.post(url, headers=headers, json=payload)
+                print(f"响应状态码: {response.status_code}")
+                print(f"响应内容: {response.text}")
+                
+                # 尝试解析响应
+                try:
+                    result = response.json()
+                    print(f"解析后的响应: {result}")
+                    
+                    if result.get("code") == 0:
+                        logging.info("根据条件查找记录成功")
+                        return result
+                    else:
+                        logging.error(f"根据条件查找记录失败: {result.get('msg')}")
+                        return None
+                except json.JSONDecodeError as e:
+                    print(f"JSON解析错误: {str(e)}")
+                    logging.error(f"根据条件查找记录异常: 响应不是有效的JSON格式")
+                    return None
+            else:
+                # 获取所有符合条件的数据
+                all_items = []
+                current_page_token = page_token
+                
+                while True:
+                    payload = {
+                        "page_size": page_size,
+                        "page_token": current_page_token
+                    }
+                    
+                    # 添加过滤条件
+                    if filter_formula:
+                        payload["filter"] = filter_formula
+                    
+                    response = requests.post(url, headers=headers, json=payload)
+                    print(f"响应状态码: {response.status_code}")
+                    print(f"响应内容: {response.text}")
+                    
+                    # 尝试解析响应
+                    try:
+                        result = response.json()
+                        print(f"解析后的响应: {result}")
+                        
+                        if result.get("code") == 0:
+                            data = result.get("data", {})
+                            items = data.get("items", [])
+                            
+                            # 处理 items 为 None 的情况
+                            if items is not None:
+                                all_items.extend(items)
+                            
+                            # 检查是否还有更多数据
+                            has_more = data.get("has_more", False)
+                            if not has_more:
+                                break
+                            
+                            # 获取下一页的 token
+                            current_page_token = data.get("page_token", "")
+                            if not current_page_token:
+                                break
+                        else:
+                            logging.error(f"根据条件查找记录失败: {result.get('msg')}")
+                            return None
+                    except json.JSONDecodeError as e:
+                        print(f"JSON解析错误: {str(e)}")
+                        logging.error(f"根据条件查找记录异常: 响应不是有效的JSON格式")
+                        return None
+                
+                # 构建完整的响应结果
+                full_result = {
+                    "code": 0,
+                    "data": {
+                        "items": all_items,
+                        "has_more": False,
+                        "total": len(all_items)
+                    },
+                    "msg": "success"
+                }
+                
+                logging.info(f"根据条件查找所有记录成功，共 {len(all_items)} 条记录")
+                return full_result
+        except Exception as e:
+            print(f"请求异常: {str(e)}")
+            logging.error(f"根据条件查找记录异常: {str(e)}")
+            return None

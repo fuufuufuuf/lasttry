@@ -41,6 +41,7 @@ When this skill is invoked, follow these steps:
    - Each scene must be SIMPLE and lifestyle-oriented (not overly complex or staged)
    - Each scene must effectively display material texture and quality
    - NO white background or studio-style scenes
+   - **Product Focus MUST include a fidelity checklist**: Before describing how the product looks in the scene, explicitly list: ① exact color(s) as seen in reference ② any pattern/print (name it, describe placement) ③ silhouette/fit ④ key construction details (collar, sleeve, length, closures). Only then describe how these details appear under the scene lighting.
 
 4. **Develop Model Profile**
    - Define Western/European model characteristics appropriate for target market
@@ -53,10 +54,12 @@ When this skill is invoked, follow these steps:
 ### MANDATORY Requirements
 
 - **Western Model Only**: Model MUST have Western/European appearance and features
+- **Standing Pose Only**: Model MUST be standing in all scenes to best showcase the product silhouette, fit, and full-length design
 - **No White Backgrounds**: Absolutely NO studio white background or plain backdrop shots
 - **Simple Scenes**: Keep environments simple and uncluttered - avoid overly complex or busy settings
 - **Lifestyle Focus**: Scenes must feel natural and relatable, not artificially staged
 - **Material Showcase**: Lighting and setting must enhance fabric texture and quality perception
+- **Exact Product Fidelity**: The Product Focus in every scene MUST faithfully enumerate every visible detail from the reference images — exact color(s), pattern/print (placement, scale, motif), texture, garment construction (collar type, neckline, sleeve style, button/zipper details, pocket placement, hem length, any embellishment). DO NOT invent, generalize, or omit any detail visible in the product images. These details are the blueprint for the image generator; any inaccuracy causes hallucination in the final photo.
 
 ### Scene Design Principles
 
@@ -95,27 +98,27 @@ Styling suggestion: Everyday casual wear
 **Expected Output:**
 
 ## Scene 1: Weekend Coffee Run
-**Setting:** Bright neighborhood coffee shop with large windows, natural wood tables, morning light streaming in. Model sitting casually at a table with a latte, looking relaxed and content.
+**Setting:** Bright neighborhood coffee shop with large windows, natural wood tables, morning light streaming in. Model standing at the counter waiting for a latte, looking relaxed and content.
 **Lighting:** Soft natural morning light from large windows, creating gentle shadows and warm ambiance.
 **Mood/Atmosphere:** Effortless, approachable, weekend ease. Conveys comfortable everyday style.
-**Product Focus:** T-shirt's relaxed drape and soft texture visible in natural sitting position. Stone-washed finish catches the soft light, showing quality and lived-in comfort.
+**Product Focus:** T-shirt's relaxed drape and full-length fit visible as model stands naturally. Stone-washed finish catches the soft light, showing quality and lived-in comfort.
 
 ## Scene 2: Urban Farmer's Market
-**Setting:** Outdoor farmer's market with colorful produce stands in soft focus background. Model browsing vegetables, canvas tote bag over shoulder.
+**Setting:** Outdoor farmer's market with colorful produce stands in soft focus background. Model standing while browsing vegetables, canvas tote bag over shoulder.
 **Lighting:** Overcast natural daylight providing even, flattering illumination without harsh shadows.
 **Mood/Atmosphere:** Active, health-conscious, community-oriented lifestyle. Sustainable living aesthetic.
-**Product Focus:** T-shirt's breathable cotton material appropriate for light activity. Clean heather grey complements fresh produce colors without competing.
+**Product Focus:** T-shirt's breathable cotton material and full silhouette showcased in standing position. Clean heather grey complements fresh produce colors without competing.
 
-## Scene 3: Home Relaxation
-**Setting:** Cozy living room with neutral tones, model on a comfortable sofa reading a book, natural afternoon light from nearby window.
-**Lighting:** Warm afternoon window light creating a peaceful, homey atmosphere.
-**Mood/Atmosphere:** Calm, comfortable, personal sanctuary. Emphasizes the t-shirt as go-to comfort wear.
-**Product Focus:** Relaxed fit evident in comfortable lounging position. Organic cotton's softness implied through model's relaxed posture.
+## Scene 3: Urban Stroll
+**Setting:** Quiet tree-lined sidewalk with soft greenery in the background. Model standing casually against a low wall or fence, looking into the distance.
+**Lighting:** Warm afternoon natural light creating a peaceful, relaxed atmosphere.
+**Mood/Atmosphere:** Calm, comfortable, effortless city living. Emphasizes the t-shirt as a go-to everyday essential.
+**Product Focus:** Relaxed fit and full-length silhouette clearly visible in standing position. Organic cotton's softness implied through the natural, at-ease stance.
 
 ## Model Profile
 **Appearance:** Western European or American, 25-32 years old, natural healthy look, minimal makeup aesthetic. Could be male or female depending on product cut. Approachable, non-intimidating features.
 **Styling:** Tousled natural hair, fresh-faced with minimal makeup (or groomed stubble for male model), simple jewelry if any. Paired with well-fitted jeans or casual pants.
-**Pose/Attitude:** Relaxed, genuine, caught in natural moments rather than posing. Soft smile or concentrated expression depending on scene. Body language open and at ease.
+**Pose/Attitude:** Standing in all scenes — relaxed, genuine, caught in natural moments rather than posing. Soft smile or concentrated expression depending on scene. Body language open and at ease.
 **Why This Model:** Represents the conscious consumer who values quality basics and sustainable choices. Relatable to target demographic seeking elevated everyday essentials.
 
 ---
@@ -153,7 +156,7 @@ Styling suggestion: Office to evening versatility
 ## Model Profile
 **Appearance:** Western European descent, 28-38 years old, polished professional appearance, refined features. Sophisticated without being unapproachable.
 **Styling:** Sleek pulled-back hair or polished bob, natural makeup with defined eyes and neutral lip. Delicate gold jewelry (simple necklace or small hoops). Paired with tailored trousers or pencil skirt.
-**Pose/Attitude:** Poised, confident posture. Engaged in activities (working, socializing, appreciating art) rather than static posing. Subtle smile, intelligent expression.
+**Pose/Attitude:** Always standing — poised, confident posture. Engaged in activities (working, socializing, appreciating art) rather than static posing. Subtle smile, intelligent expression.
 **Why This Model:** Represents the professional woman who invests in quality pieces for versatility. Aspirational yet achievable elegance for target demographic seeking workwear elevation.
 
 ---
@@ -176,11 +179,11 @@ Styling suggestion: Autumn/winter outerwear
 **Mood/Atmosphere:** Urban sophistication, purposeful morning routine, city life elegance.
 **Product Focus:** Coat's structured silhouette and oversized fit evident in walking motion. Wool texture catches golden light, showing quality material and substantial weight.
 
-## Scene 2: Park Bench Reading
-**Setting:** City park bench with autumn foliage in soft focus background. Model sitting with book and thermos, coat wrapped around for warmth.
+## Scene 2: City Park Stroll
+**Setting:** City park path with autumn foliage in soft focus background. Model standing by a tree, holding a thermos, coat belted loosely.
 **Lighting:** Soft overcast autumn daylight providing even, cool-toned natural light.
 **Mood/Atmosphere:** Contemplative, leisurely weekend, cozy comfort. Intellectual casual.
-**Product Focus:** Coat's warmth and comfort implied through model's cozy posture. Double-breasted detail visible from front angle, showing craftsmanship and classic styling.
+**Product Focus:** Coat's full mid-length silhouette and double-breasted front clearly showcased in standing position. Warmth and quality implied through structured drape.
 
 ## Scene 3: Train Platform Commute
 **Setting:** Modern train platform with clean lines, minimal urban architecture. Model checking phone while waiting, other commuters blurred in background.
@@ -191,7 +194,7 @@ Styling suggestion: Autumn/winter outerwear
 ## Model Profile
 **Appearance:** Northern European or American, 30-40 years old, classic features, natural beauty. Healthy, active appearance suggesting urban lifestyle.
 **Styling:** Natural-looking hair (could be tousled by autumn breeze), minimal makeup emphasizing skin health, wool scarf in complementary color. Paired with dark jeans or tailored trousers and ankle boots.
-**Pose/Attitude:** In motion or engaged in authentic activities (walking, reading, waiting). Natural expressions showing focus or contentment. Confident, independent body language.
+**Pose/Attitude:** Always standing — in motion or engaged in authentic activities (walking, waiting, browsing). Natural expressions showing focus or contentment. Confident, independent body language.
 **Why This Model:** Embodies the urban professional who values timeless investment pieces. Represents target customer seeking classic outerwear that transitions across occasions and seasons.
 
 ## Output Format
@@ -203,7 +206,7 @@ Always structure your output following this exact format:
 **Setting:** [Detailed description of physical environment and model's activity within it]
 **Lighting:** [Type of lighting, quality, direction, and effect on materials]
 **Mood/Atmosphere:** [Emotional tone and lifestyle message conveyed]
-**Product Focus:** [How the product is showcased, material qualities highlighted, specific details visible]
+**Product Focus:** [List exact details from reference images: color, pattern/print, silhouette, construction details. Then describe how these specific details appear in this scene. Never invent details not shown in reference images.]
 
 ## Scene 2: [Descriptive Scene Name]
 **Setting:** [Environment and activity description]
@@ -220,7 +223,7 @@ Always structure your output following this exact format:
 ## Model Profile
 **Appearance:** [Age, ethnicity (must be Western/European), physical characteristics, overall aesthetic]
 **Styling:** [Hair, makeup, accessories, complementary clothing pieces]
-**Pose/Attitude:** [Body language, expressions, engagement style]
+**Pose/Attitude:** [Must be standing in all scenes; body language, expressions, engagement style]
 **Why This Model:** [Strategic rationale for this model choice relative to product and target market]
 ```
 
@@ -239,6 +242,7 @@ Always structure your output following this exact format:
   - Lighting that doesn't serve the fabric (harsh light on delicate materials)
   - Scenes so complex they distract from the product
   - Generic "lifestyle" clichés without authentic context
+  - Hallucinated product details: Never describe colors, patterns, prints, or construction details that are NOT clearly visible in the reference images. Describe only what IS shown.
 
 - **Balancing Product and Scene:**
   - The product should always be the clear focal point

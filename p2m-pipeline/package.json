@@ -1,0 +1,16 @@
+{
+  "name": "p2m-pipeline",
+  "version": "1.0.0",
+  "description": "Product to Model image generation pipeline",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.36.0",
+    "@google/generative-ai": "^0.21.0",
+    "cloudinary": "^2.5.0",
+    "node-fetch": "^2.7.0"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "lark-mcp": {
+      "command": "lark-mcp",
+      "args": [
+        "mcp",
+        "-a", "cli_a98591493d7d100e",
+        "-s", "90ZGD0KdiybDjXNbaxDWRhsPAjJPWKKP"
+      ]
+    }
+  }
+}
