@@ -39,14 +39,15 @@ async function processRecord(config, token, record) {
   const recordId = record.record_id;
   const handle = extractTextValue(fields.handle);
 
-  console.log(`\n--- Processing record: ${handle} (${recordId}) ---`);
+  const videoId = extractTextValue(fields.video_id);
+  console.log(`\n--- Processing record: ${handle} (${videoId || recordId}) ---`);
 
-  const productDesc = extractTextValue(fields.product_desc);
+  const productDesc = extractTextValue(fields.product_desc) || extractTextValue(fields.product_title);
   const sourceImgsRaw = extractTextValue(fields.product_source_imgs);
   const imgUrls = parseImageUrls(sourceImgsRaw);
 
   if (!productDesc) {
-    console.log('[Skip] No product_desc');
+    console.log('[Skip] No product_desc or prod_title');
     return;
   }
   if (imgUrls.length === 0) {
@@ -64,24 +65,38 @@ async function processRecord(config, token, record) {
   );
   console.log(`[Claude] ${scenes.length} scene prompt(s) ready`);
 
-  // Step 2-4: Gemini generates all scenes in parallel; update Feishu as each one finishes
-  const collectedUrls = [];
-
-  await Promise.all(
-    scenes.map((scene, i) => {
+  // Step 2-4: Gemini generates all scenes in parallel; collect URLs then update Feishu once
+  const results = await Promise.allSettled(
+    scenes.map(async (scene, i) => {
       console.log(`[Gemini] Generating image for Scene ${i + 1}...`);
-      return generateModelImage(config.gemini.api_key, scene, imgUrls)
-        .then(({ base64, mimeType }) => cloudinaryUtil.uploadBase64(base64, mimeType))
-        .then(async (url) => {
-          collectedUrls.push(url);
-          console.log(`[Scene ${i + 1}] URL: ${url}`);
-          await updateRecord(token, config.bitable.app_token, config.bitable.table_id, recordId, {
-            generated_img_url: collectedUrls.join('\n'),
-          });
-          console.log(`[Scene ${i + 1}] Feishu updated (${collectedUrls.length} image(s) so far)`);
-        });
+      const { base64, mimeType } = await generateModelImage(config.gemini.api_key, scene, imgUrls);
+      const url = await cloudinaryUtil.uploadBase64(base64, mimeType);
+      console.log(`[Scene ${i + 1}] URL: ${url}`);
+      return url;
     })
   );
+
+  const collectedUrls = [];
+  results.forEach((r, i) => {
+    if (r.status === 'fulfilled') {
+      if (r.value) {
+        collectedUrls.push(r.value);
+      } else {
+        console.error(`[Scene ${i + 1}] URL is undefined`);
+      }
+    } else {
+      console.error(`[Scene ${i + 1}] Failed: ${r.reason?.message || r.reason}`);
+    }
+  });
+
+  if (collectedUrls.length > 0) {
+    await updateRecord(token, config.bitable.app_token, config.bitable.table_id, recordId, {
+      generated_img_url: collectedUrls.join('\n'),
+    });
+    console.log(`[Done] Feishu updated with ${collectedUrls.length}/${scenes.length} image(s)`);
+  } else {
+    throw new Error('All image generation failed');
+  }
 
   console.log(`[Done] Record ${recordId} complete with ${collectedUrls.length} image(s)`);
 }
@@ -122,7 +137,7 @@ async function main() {
       await processRecord(config, token, record);
       success++;
     } catch (err) {
-      console.error(`[Error] Record ${record.record_id}: ${err.message}`);
+      console.error(`[Error] Record ${record.record_id}: ${err?.message || err}`);
       failed++;
     }
   }

@@ -12,3 +12,13 @@
 3
 4.1 不要生成白底图片
 4.2 
+
+AQ.Ab8RN6LpVhYyWvA1iKOES3MNAqOjVMANPyYxT7H5bDcCQUfgMQ
+vertex api key
+
+
+        // "base_url": "https://openrouter.ai/api/v1",
+        // "api_key": "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"
+
+
+        model: "anthropic/claude-3.5-sonnet"

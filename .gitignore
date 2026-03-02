@@ -1,5 +1,8 @@
 # Ignore the config.json file
 config.json
 
+# Ignore temp files
+temp.txt
+
 # Ignore the .claude/settings.local.json file
 .claude/settings.local.json
