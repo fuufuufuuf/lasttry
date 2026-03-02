@@ -1,7 +1,7 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenAI } = require('@google/genai');
 const fetch = require('node-fetch');
 
-const MODEL_ID = 'gemini-3-pro-image-preview';
+const MODEL_ID = 'gemini-3.1-flash-image-preview';
 
 async function urlToBase64(url) {
   const res = await fetch(url);
@@ -12,11 +12,7 @@ async function urlToBase64(url) {
 }
 
 async function generateModelImage(apiKey, prompt, refImageUrls) {
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({
-    model: MODEL_ID,
-    generationConfig: { responseModalities: ['Text', 'Image'] },
-  });
+  const ai = new GoogleGenAI({ apiKey });
 
   // Download reference images
   const imageParts = [];
@@ -33,8 +29,13 @@ async function generateModelImage(apiKey, prompt, refImageUrls) {
   ];
 
   console.log(`[Gemini] Generating image with model: ${MODEL_ID}`);
-  const result = await model.generateContent(contents);
-  const response = result.response;
+  const response = await ai.models.generateContent({
+    model: MODEL_ID,
+    contents,
+    config: {
+      responseModalities: ['TEXT', 'IMAGE'],
+    },
+  });
 
   // Extract image from response parts
   for (const part of response.candidates[0].content.parts) {

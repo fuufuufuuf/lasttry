@@ -55,7 +55,6 @@ async function processRecord(config, token, record) {
   }
 
   console.log(`[Info] product_desc length: ${productDesc.length}`);
-  console.log(`[Info] image URLs: ${imgUrls.slice(0, 2).join(', ')}`);
 
   // Step 1: Claude analyzes images and generates p2m prompts (3 scenes)
   const { scenes } = await analyzeAndGeneratePrompt(
@@ -65,25 +64,26 @@ async function processRecord(config, token, record) {
   );
   console.log(`[Claude] ${scenes.length} scene prompt(s) ready`);
 
-  // Step 2-3: Gemini generates + Cloudinary uploads for each scene
-  const imageUrls = [];
-  for (let i = 0; i < scenes.length; i++) {
-    console.log(`[Gemini] Generating image for Scene ${i + 1}...`);
-    const { base64, mimeType } = await generateModelImage(
-      config.gemini.api_key,
-      scenes[i],
-      imgUrls
-    );
-    const url = await cloudinaryUtil.uploadBase64(base64, mimeType);
-    imageUrls.push(url);
-    console.log(`[Scene ${i + 1}] URL: ${url}`);
-  }
+  // Step 2-4: Gemini generates all scenes in parallel; update Feishu as each one finishes
+  const collectedUrls = [];
 
-  // Step 4: Update Feishu record with all image URLs (newline-separated)
-  await updateRecord(token, config.bitable.app_token, config.bitable.table_id, recordId, {
-    generated_img_url: imageUrls.join('\n'),
-  });
-  console.log(`[Done] Updated record ${recordId} with ${imageUrls.length} image(s)`);
+  await Promise.all(
+    scenes.map((scene, i) => {
+      console.log(`[Gemini] Generating image for Scene ${i + 1}...`);
+      return generateModelImage(config.gemini.api_key, scene, imgUrls)
+        .then(({ base64, mimeType }) => cloudinaryUtil.uploadBase64(base64, mimeType))
+        .then(async (url) => {
+          collectedUrls.push(url);
+          console.log(`[Scene ${i + 1}] URL: ${url}`);
+          await updateRecord(token, config.bitable.app_token, config.bitable.table_id, recordId, {
+            generated_img_url: collectedUrls.join('\n'),
+          });
+          console.log(`[Scene ${i + 1}] Feishu updated (${collectedUrls.length} image(s) so far)`);
+        });
+    })
+  );
+
+  console.log(`[Done] Record ${recordId} complete with ${collectedUrls.length} image(s)`);
 }
 
 async function main() {

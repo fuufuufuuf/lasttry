@@ -22,6 +22,7 @@ async function queryRecords(token, appToken, tableId) {
       filter: {
         conditions: [
           { field_name: '是否生成视频', operator: 'is', value: ['是'] },
+          { field_name: 'generated_img_url', operator: 'isEmpty', value: [] },
         ],
         conjunction: 'and',
       },
