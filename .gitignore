@@ -6,3 +6,6 @@ temp.txt
 
 # Ignore the .claude/settings.local.json file
 .claude/settings.local.json
+
+# Ignore settings.local.json in .claude directory
+.claude/settings.local.json
