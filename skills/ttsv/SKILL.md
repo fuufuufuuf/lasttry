@@ -44,7 +44,7 @@ Prompt: [Shot type] of [another product detail] [action], [setting], [lighting],
 ## Shooting Rules
 
 **Duration & Structure**
-- Total duration: 8-10 seconds
+- Total duration: 8 seconds
 - 2-3 shots maximum
 - Shot 1: Medium or wide shot showing full outfit and model
 - Shot 2-3: Close-up shots of product details (fabric texture, fit, design elements)
@@ -75,8 +75,8 @@ Include descriptive language that drives purchase desire:
 Every shot prompt MUST include all of these elements:
 
 1. **Shot type**: Medium shot, close-up, medium close-up (no wide shots or extreme close-ups)
-2. **Camera movement**: fast tracking shot, quick dolly in, rapid pan, dynamic handheld, swift slider movement, 2x speed
-3. **Subject action**: walking quickly, turning swiftly, rapid fabric movement, quick gesture, briskly adjusting clothing, energetic movement, fast interaction with environment, 2x speed
+2. **Camera movement**: fast tracking shot, quick dolly in, rapid pan, dynamic handheld, swift slider movement, 3x speed
+3. **Subject action**: striding quickly, spinning rapidly, dramatic fabric swirl, bold gesture, swiftly adjusting clothing, dynamic movement, fast interaction with environment, 3x speed, energetic motion, pulling and stretching fabric to show elasticity
 4. **Setting**: Specific location description that matches the first frame
 5. **Lighting**: soft lighting, natural light, studio lighting, golden hour, high key, diffused light
 6. **Style keywords**: cinematic, commercial, fashion photography, editorial, boutique aesthetic, high-end
@@ -102,19 +102,19 @@ Every shot prompt MUST include all of these elements:
 - Purpose: Show the complete outfit and establish the scene
 - Framing: Medium shot only
 - Focus: Full body or 3/4 body, showing how the garment fits and flows
-- Action: Fast dynamic movement (walking quickly, turning swiftly, energetic gesturing) with contextual actions based on scene
+- Action: Fast dynamic movement (striding quickly, spinning rapidly, dramatic gesturing, 3x speed) with bold contextual actions based on scene
 
 **Shot 2 (Detail shot)**
 - Purpose: Highlight specific product features that drive purchase
 - Framing: Close-up or medium close-up
 - Focus: Fabric texture, design details, fit at specific areas (neckline, waist, sleeves)
-- Action: Rapid fabric movement, hand quickly touching fabric, fast detail reveal with energy
+- Action: Rapid fabric swirl, hand swiftly touching fabric, pulling and stretching fabric to demonstrate elasticity and quality, fast detail reveal with dramatic energy, 3x speed
 
 **Shot 3 (Optional secondary detail)**
 - Purpose: Showcase another compelling product feature from different angle
 - Framing: Close-up or medium close-up
 - Focus: Different detail than Shot 2, potentially from side or back angle
-- Action: Quick complementary movement with energetic contextual gestures
+- Action: Quick dynamic movement with bold energetic contextual gestures, 3x speed
 
 ## Example Output
 
@@ -127,13 +127,13 @@ Every shot prompt MUST include all of these elements:
 **Output**:
 ```
 [Shot 1] — 4s
-Prompt: Fast tracking shot of a woman in a flowing white summer dress walking quickly through a sunlit garden, 2x speed, soft natural lighting, elegant and graceful movement, commercial fashion photography style, 4K, shallow depth of field
+Prompt: Fast tracking shot of a woman in a flowing white summer dress striding quickly through a sunlit garden, 3x speed, dramatic fabric swirl, soft natural lighting, elegant and dynamic movement, commercial fashion photography style, 4K, shallow depth of field
 
 [Shot 2] — 3s
-Prompt: Quick close-up of the dress fabric swaying rapidly in the breeze, 2x speed, showing the lightweight texture and delicate embroidery details, soft natural lighting, boutique fashion aesthetic, 4K, professional quality
+Prompt: Quick close-up of hands pulling and stretching the dress fabric to show elasticity and texture, 3x speed, revealing the lightweight cotton quality and delicate embroidery details, soft natural lighting, boutique fashion aesthetic, 4K, professional quality
 
 [Shot 3] — 3s
-Prompt: Medium close-up from side angle of the model's hand swiftly adjusting the dress collar, 2x speed, highlighting the tailored neckline and flattering fit, soft natural lighting, high-end commercial style, 4K, cinematic
+Prompt: Medium close-up from side angle of the model spinning swiftly, 3x speed, highlighting the tailored neckline and flattering fit with dramatic fabric movement, soft natural lighting, high-end commercial style, 4K, cinematic
 ```
 
 ### Example 2: Casual Streetwear
@@ -145,13 +145,13 @@ Prompt: Medium close-up from side angle of the model's hand swiftly adjusting th
 **Output**:
 ```
 [Shot 1] — 4s
-Prompt: Fast tracking shot of a young woman in an oversized beige hoodie walking briskly on a modern urban street, 2x speed, natural daylight, relaxed and effortless pose, commercial streetwear photography style, 4K, crisp focus
+Prompt: Fast tracking shot of a young woman in an oversized beige hoodie striding briskly on a modern urban street, 3x speed, natural daylight, bold and dynamic pose, commercial streetwear photography style, 4K, crisp focus
 
 [Shot 2] — 3s
-Prompt: Quick dolly in of the hoodie fabric showing the premium cotton texture and soft draping, 2x speed, natural daylight, high-end boutique aesthetic, 4K, shallow depth of field
+Prompt: Quick dolly in of hands pulling and stretching the hoodie fabric to demonstrate premium cotton elasticity and texture, 3x speed, natural daylight, high-end boutique aesthetic, 4K, shallow depth of field
 
 [Shot 3] — 3s
-Prompt: Medium close-up from back angle of the model's hands swiftly moving into the hoodie pocket, 2x speed, highlighting the comfortable oversized fit and modern silhouette, natural daylight, trendy commercial style, 4K, professional quality
+Prompt: Medium close-up from back angle of the model spinning rapidly, 3x speed, highlighting the comfortable oversized fit and modern silhouette with dynamic movement, natural daylight, trendy commercial style, 4K, professional quality
 ```
 
 ## Usage Instructions

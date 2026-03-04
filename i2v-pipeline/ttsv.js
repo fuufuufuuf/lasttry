@@ -62,8 +62,18 @@ Please generate a 2-3 shot video storyboard following the TTSV format. The video
         throw new Error('No shots parsed from storyboard');
       }
 
+      // Update durations in fullStoryboard text
+      let updatedContent = content;
+      const totalDuration = shots.reduce((sum, shot) => sum + shot.duration, 0);
+      shots.forEach(shot => {
+        const regex = new RegExp(`(\\[Shot ${shot.shotNumber}\\][^\\n]*?)\\d+s`, 'g');
+        updatedContent = updatedContent.replace(regex, `$1${shot.duration}s`);
+      });
+      updatedContent = updatedContent.replace(/Total:\s*\d+s/g, `Total: ${totalDuration}s`);
+      updatedContent = updatedContent.replace(/\*\*Total Duration\*\*:\s*\d+\s*seconds?/g, `**Total Duration**: ${totalDuration}s`);
+
       return {
-        fullStoryboard: content,
+        fullStoryboard: updatedContent,
         shots: shots,
         totalDuration: shots.reduce((sum, shot) => sum + shot.duration, 0)
       };
@@ -85,15 +95,17 @@ Please generate a 2-3 shot video storyboard following the TTSV format. The video
 
 function parseStoryboard(content) {
   const shots = [];
+  const fixedDurations = [2, 3, 3];
 
   // Match shot patterns, handling code blocks and markdown sections
   const shotRegex = /\[Shot (\d+)\][^\n]*?(\d+)s[^\n]*\n+Prompt:\s*(.+?)(?=\n\n\[Shot|\n\n```|\n\n---|\n\n##|$)/gs;
 
   let match;
   while ((match = shotRegex.exec(content)) !== null) {
+    const shotIndex = shots.length;
     shots.push({
       shotNumber: parseInt(match[1]),
-      duration: parseInt(match[2]),
+      duration: fixedDurations[shotIndex] || parseInt(match[2]),
       prompt: match[3].trim()
     });
   }

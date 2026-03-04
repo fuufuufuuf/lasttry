@@ -67,7 +67,7 @@ function extractTextValue(field) {
   return String(field);
 }
 
-async function reviewRecord(config, token, record) {
+async function reviewRecord(config, token, record, imageIndex = 0) {
   const fields = record.fields;
   const recordId = record.record_id;
   const handle = extractTextValue(fields.handle);
@@ -86,8 +86,8 @@ async function reviewRecord(config, token, record) {
     return;
   }
 
-  const firstImageUrl = generatedImgUrls[0];
-  console.log(`\nImage: ${firstImageUrl}`);
+  const firstImageUrl = generatedImgUrls[imageIndex] || generatedImgUrls[0];
+  console.log(`\nImage [${imageIndex}]: ${firstImageUrl}`);
   console.log(`\nProduct Description:\n${productDesc}\n`);
 
   try {
@@ -104,6 +104,10 @@ async function reviewRecord(config, token, record) {
     console.log(storyboard.fullStoryboard);
     console.log(`\nTotal Duration: ${storyboard.totalDuration}s`);
     console.log(`Total Shots: ${storyboard.shots.length}`);
+    console.log('\n--- Parsed Shots ---');
+    storyboard.shots.forEach(shot => {
+      console.log(`Shot ${shot.shotNumber}: ${shot.duration}s`);
+    });
 
   } catch (err) {
     console.error(`\n[Error] ${err.message}`);
@@ -117,9 +121,11 @@ async function main() {
   const records = await queryAllRecords(token, config.bitable.app_token, config.bitable.table_id);
   console.log(`Found ${records.length} records\n`);
 
+  const imageIndex = parseInt(process.argv[2]) || 0;
+
   // Only process first record for review
   if (records.length > 0) {
-    await reviewRecord(config, token, records[0]);
+    await reviewRecord(config, token, records[0], imageIndex);
   }
 }
 
