@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx -y @larksuiteoapi/lark-mcp --version)",
+      "Bash(npm install -g @larksuiteoapi/lark-mcp)",
+      "Bash(where lark-mcp)",
+      "mcp__lark-mcp__bitable_v1_appTable_list",
+      "mcp__lark-mcp__bitable_v1_appTableField_list",
+      "Bash(curl -s -X POST \"https://open.feishu.cn/open-apis/bitable/v1/apps/Ya7EbZyhXaq98tsGjvSch93xnhe/tables/tbldwjwVRbgOHgos/fields\" -H \"Authorization: Bearer t-g1042rmkJ3SOOS4RXIKGPOSZOENPKL34X2CJWPUI\" -H \"Content-Type: application/json\" -d '{\"\"field_name\"\":\"\"generated_img_url\"\",\"\"type\"\":1}')",
+      "Bash(node index.js)"
+    ]
+  },
+    "env": {
+    "ANTHROPIC_API_KEY": "sk-R08bUMmEdfJXgaHVszCiUjEKitQLn7tcFRpxMUB3jHzvS49d",
+    "ANTHROPIC_BASE_URL": "http://1.95.142.151:3000",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-sonnet-4-6",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-sonnet-4-6",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-6",
+    "ANTHROPIC_MODEL": "claude-sonnet-4-6"
+  },
+  "enabledMcpjsonServers": [
+    "lark-mcp"
+  ],
+  "enableAllProjectMcpServers": true
+}

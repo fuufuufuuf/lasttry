@@ -1,0 +1,15 @@
+{
+  "name": "i2v-pipeline",
+  "version": "1.0.0",
+  "description": "Image to Video generation pipeline using Claude, TTSV, and Veo3.1",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.7",
+    "cloudinary": "^1.41.0",
+    "fs-extra": "^11.1.1",
+    "axios": "^1.6.0"
+  }
+}

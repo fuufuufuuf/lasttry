@@ -1,1 +1,4 @@
 node_modules/
+
+# Exclude config.json to prevent sensitive information from being committed
+config.json
