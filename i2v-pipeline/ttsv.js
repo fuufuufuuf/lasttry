@@ -98,7 +98,7 @@ function parseStoryboard(content) {
   const fixedDurations = [2, 3, 3];
 
   // Match shot patterns, handling code blocks and markdown sections
-  const shotRegex = /\[Shot (\d+)\][^\n]*?(\d+)s[^\n]*\n+Prompt:\s*(.+?)(?=\n\n\[Shot|\n\n```|\n\n---|\n\n##|$)/gs;
+  const shotRegex = /\*?\*?\[Shot (\d+)\]\*?\*?[^\n]*?(\d+)s[^\n]*\n+Prompt:\s*(.+?)(?=\n\n\*?\*?\[Shot|\n\n```|\n\n---|\n\n##|$)/gs;
 
   let match;
   while ((match = shotRegex.exec(content)) !== null) {

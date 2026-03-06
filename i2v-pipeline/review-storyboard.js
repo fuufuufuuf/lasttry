@@ -118,14 +118,23 @@ async function main() {
   const config = loadConfig();
   const token = await getAccessToken(config.feishu.app_id, config.feishu.app_secret);
 
+  const videoId = process.argv[2];
+  const imageIndex = parseInt(process.argv[3]) || 0;
+
   const records = await queryAllRecords(token, config.bitable.app_token, config.bitable.table_id);
   console.log(`Found ${records.length} records\n`);
 
-  const imageIndex = parseInt(process.argv[2]) || 0;
+  let targetRecord = records[0];
+  if (videoId) {
+    targetRecord = records.find(r => extractTextValue(r.fields.video_id) === videoId);
+    if (!targetRecord) {
+      console.log(`[Error] No record found with video_id: ${videoId}`);
+      return;
+    }
+  }
 
-  // Only process first record for review
-  if (records.length > 0) {
-    await reviewRecord(config, token, records[0], imageIndex);
+  if (targetRecord) {
+    await reviewRecord(config, token, targetRecord, imageIndex);
   }
 }
 
