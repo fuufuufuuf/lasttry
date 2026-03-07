@@ -13,12 +13,26 @@ function loadConfig() {
   return JSON.parse(raw);
 }
 
+function parseArgs() {
+  const args = process.argv.slice(2);
+  const parsed = { vid: null, index: 0 };
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '-vid' && args[i + 1]) {
+      parsed.vid = args[++i];
+    } else if (args[i] === '-index' && args[i + 1]) {
+      parsed.index = parseInt(args[++i]) || 0;
+    }
+  }
+  return parsed;
+}
+
 async function queryAllRecords(token, appToken, tableId) {
   const body = {
     filter: {
       conditions: [
         { field_name: '是否生成视频', operator: 'is', value: ['是'] },
         { field_name: 'generated_img_url', operator: 'isNotEmpty', value: [] },
+        {field_name: 'ai_video_urls', operator: 'isEmpty', value: [] }
       ],
       conjunction: 'and',
     },
@@ -39,11 +53,6 @@ async function queryAllRecords(token, appToken, tableId) {
   const data = await res.json();
   if (data.code !== 0) throw new Error(`Feishu query failed: ${data.msg}`);
   return data.data.items || [];
-}
-
-function loadConfig() {
-  const raw = fs.readFileSync(CONFIG_PATH, 'utf-8');
-  return JSON.parse(raw);
 }
 
 function parseImageUrls(rawValue) {
@@ -118,8 +127,7 @@ async function main() {
   const config = loadConfig();
   const token = await getAccessToken(config.feishu.app_id, config.feishu.app_secret);
 
-  const videoId = process.argv[2];
-  const imageIndex = parseInt(process.argv[3]) || 0;
+  const { vid: videoId, index: imageIndex } = parseArgs();
 
   const records = await queryAllRecords(token, config.bitable.app_token, config.bitable.table_id);
   console.log(`Found ${records.length} records\n`);

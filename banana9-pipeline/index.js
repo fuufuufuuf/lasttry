@@ -41,7 +41,7 @@ async function processRecord(config, token, record) {
   console.log(`\n--- Processing record: ${handle} (${recordId}) ---`);
 
   const productId = extractTextValue(fields.product_id) || recordId;
-  const productDesc = extractTextValue(fields.product_desc);
+  const productDesc = extractTextValue(fields.product_desc) || extractTextValue(fields.product_title);
   const sourceImgsRaw = extractTextValue(fields.product_source_imgs);
   const generatedImgRaw = extractTextValue(fields.generated_img_url);
 
@@ -85,13 +85,13 @@ async function processRecord(config, token, record) {
 
   // Step 3: Upload to Cloudinary under tiktok/pics/grid9/{timestamp}_{product_id}/
   const timestamp = Date.now();
-  const { folderUrl } = await cloudinaryUtil.uploadGrid9(base64, mimeType, timestamp, productId);
+  const { secureUrl } = await cloudinaryUtil.uploadGrid9(base64, mimeType, timestamp, productId);
 
-  // Step 4: Update Feishu record grid9 field with the Cloudinary folder URL
+  // Step 4: Update Feishu record grid9 field with the Cloudinary image URL
   await updateRecord(token, config.bitable.app_token, config.bitable.table_id, recordId, {
-    grid9: folderUrl,
+    grid9: secureUrl,
   });
-  console.log(`[Done] Updated record ${recordId} grid9: ${folderUrl}`);
+  console.log(`[Done] Updated record ${recordId} grid9: ${secureUrl}`);
 }
 
 async function main() {

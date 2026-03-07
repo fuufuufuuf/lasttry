@@ -8,21 +8,35 @@ function loadSkill() {
   return fs.readFileSync(SKILL_PATH, 'utf-8');
 }
 
+async function fetchImageAsBase64(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to fetch image: ${res.status}`);
+  const contentType = res.headers.get('content-type') || 'image/jpeg';
+  const buffer = await res.buffer();
+  const mediaType = contentType.split(';')[0].trim();
+  return { base64: buffer.toString('base64'), mediaType };
+}
+
 async function generateBanana9Prompt(anthropicConfig, productDesc, productImgUrl, modelImgUrl) {
   const skillContent = loadSkill();
+
+  const [productImg, modelImg] = await Promise.all([
+    fetchImageAsBase64(productImgUrl),
+    fetchImageAsBase64(modelImgUrl),
+  ]);
 
   const userContent = [
     {
       type: 'image',
-      source: { type: 'url', url: productImgUrl },
+      source: { type: 'base64', media_type: productImg.mediaType, data: productImg.base64 },
     },
     {
       type: 'image',
-      source: { type: 'url', url: modelImgUrl },
+      source: { type: 'base64', media_type: modelImg.mediaType, data: modelImg.base64 },
     },
     {
       type: 'text',
-      text: `Product Description:\n${productDesc}\n\nImage 1 (above, first image) is the product photo — use it as the garment color and construction ground truth.\nImage 2 (above, second image) is the completed model photo — use it as the character and scene ground truth.\n\nApply the Banana9 skill to analyze both images and generate a complete, production-ready Nano Banana prompt for a 3×3 grid of 9 frames. Follow the full output format specified in the skill.`,
+      text: `Product Description:\n${productDesc}\n\nImage 1 (above, first image) is the product photo — use it as the garment color and construction ground truth.\nImage 2 (above, second image) is the completed model photo — use it as the character and scene ground truth.\n\nApply the Banana9 skill to analyze both images and generate a complete, production-ready Nano Banana prompt for a 4×3 grid of 12 frames. Follow the full output format specified in the skill.`,
     },
   ];
 
@@ -39,7 +53,7 @@ async function generateBanana9Prompt(anthropicConfig, productDesc, productImgUrl
       'X-Title': 'Banana9 Pipeline',
     },
     body: JSON.stringify({
-      model: 'anthropic/claude-3.5-sonnet',
+      model: anthropicConfig.model || 'anthropic/claude-3.5-sonnet',
       max_tokens: 4096,
       system: skillContent,
       messages: [{ role: 'user', content: userContent }],

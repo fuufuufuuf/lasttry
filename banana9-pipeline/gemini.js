@@ -51,13 +51,21 @@ async function generateGrid9Image(apiKey, nanoBananaPrompt, productImgUrl, model
       { text: nanoBananaPrompt },
     ];
 
-    console.log(`[Gemini] Generating 9-grid image with model: ${MODEL_ID}`);
+    console.log(`[Gemini] Generating 12-grid image with model: ${MODEL_ID}`);
     const result = await model.generateContent(contents);
     const response = result.response;
 
-    for (const part of response.candidates[0].content.parts) {
+    const parts = response.candidates?.[0]?.content?.parts;
+    if (!parts || !Array.isArray(parts)) {
+      const reason = response.candidates?.[0]?.finishReason || 'unknown';
+      console.log(`[Gemini] No parts in response. finishReason: ${reason}`);
+      console.log('[Gemini] Raw candidate:', JSON.stringify(response.candidates?.[0], null, 2));
+      throw new Error(`Gemini returned no content parts (finishReason: ${reason})`);
+    }
+
+    for (const part of parts) {
       if (part.inlineData) {
-        console.log('[Gemini] 9-grid image generated successfully');
+        console.log('[Gemini] 12-grid image generated successfully');
         return {
           base64: part.inlineData.data,
           mimeType: part.inlineData.mimeType || 'image/png',
@@ -66,7 +74,7 @@ async function generateGrid9Image(apiKey, nanoBananaPrompt, productImgUrl, model
     }
 
     // Log text response if no image returned (helps diagnose refusals)
-    const textParts = response.candidates[0].content.parts.filter(p => p.text);
+    const textParts = parts.filter(p => p.text);
     if (textParts.length > 0) {
       console.log('[Gemini] Model response (no image):', textParts.map(p => p.text).join(''));
     }

@@ -21,7 +21,7 @@ ${JSON.stringify(imageAnalysis, null, 2)}
 Product description:
 ${productDesc}
 
-Please generate a 2-3 shot video storyboard following the TTSV format. The video should be 8-10 seconds total.`;
+Please generate a 2-shot video storyboard following the TTSV format. The video should be 8 seconds total, with each shot being 4 seconds.`;
 
   const maxRetries = 3;
   let lastError;
@@ -95,10 +95,10 @@ Please generate a 2-3 shot video storyboard following the TTSV format. The video
 
 function parseStoryboard(content) {
   const shots = [];
-  const fixedDurations = [2, 3, 3];
+  const fixedDurations = [4, 4];
 
-  // Match shot patterns, handling code blocks and markdown sections
-  const shotRegex = /\*?\*?\[Shot (\d+)\]\*?\*?[^\n]*?(\d+)s[^\n]*\n+Prompt:\s*(.+?)(?=\n\n\*?\*?\[Shot|\n\n```|\n\n---|\n\n##|$)/gs;
+  // Match shot patterns like [Shot 1 — Hook] — 4s or **[Shot 1]** 3s
+  const shotRegex = /\*?\*?\[Shot\s+(\d+)[^\]]*\]\*?\*?[^\n]*?(\d+)s[^\n]*\n+Prompt:\s*(.+?)(?=\n\n\*?\*?\[Shot|\n\n```|\n\n---|\n\n##|$)/gs;
 
   let match;
   while ((match = shotRegex.exec(content)) !== null) {
