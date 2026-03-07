@@ -106,6 +106,15 @@ async function processRecord(config, token, record) {
 
   } catch (err) {
     console.error(`[Error] Failed to process record: ${err.message}`);
+    // Update Feishu record with N/A on failure
+    try {
+      await updateRecord(token, config.bitable.app_token, config.bitable.table_id, recordId, {
+        ai_video_urls: 'N/A',
+      });
+      console.log('[Feishu] Record updated with N/A due to failure');
+    } catch (updateErr) {
+      console.error(`[Error] Failed to update record as N/A: ${updateErr.message}`);
+    }
     throw err;
   }
 }

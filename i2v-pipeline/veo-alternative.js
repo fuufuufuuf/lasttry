@@ -12,20 +12,22 @@ async function generateVideoAlternative(storyboard, firstImageUrl, config) {
   await fs.mkdir(tempDir, { recursive: true });
 
   try {
-    // Extract the first shot from storyboard
-    const firstShot = storyboard.shots[0];
+    // Build full prompt from entire storyboard
+    // const fullPrompt = storyboard.shots.map(shot => shot.prompt).join('\n');
+    const fullPrompt = storyboard.fullStoryboard;
 
-    console.log(`[VeoAlt] Generating ${firstShot.duration}s video...`);
-    console.log(`[VeoAlt] Prompt: ${firstShot.prompt.substring(0, 100)}...`);
+
+    console.log(`[VeoAlt] Generating video with full storyboard prompt...`);
+    console.log(`[VeoAlt] Prompt: ${fullPrompt}`);
 
     // Prepare the request payload for alternative API
     const requestPayload = {
       images: [firstImageUrl],  // Array of image URLs
       model: config?.alt_model || 'veo3.1-fast-components',
       orientation: 'portrait',  // For TikTok/Douyin vertical format
-      prompt: firstShot.prompt,
+      prompt: fullPrompt,
       size: '720x1280',  // Standard vertical video size
-      duration: firstShot.duration || config?.duration || 8,  // Default 8s
+      duration: 8,  // Default 8s
       aspect_ratio: '9:16'  // Vertical aspect ratio
     };
 
@@ -110,7 +112,7 @@ async function generateVideoAlternative(storyboard, firstImageUrl, config) {
  */
 async function pollAlternativeAPI(config, taskId) {
   const pollInterval = 5000; // 5 seconds (more frequent as this API updates quickly)
-  const maxPolls = 60; // 5 minutes max (60 * 5s)
+  const maxPolls = 120; // 5 minutes max (60 * 5s)
 
   for (let i = 0; i < maxPolls; i++) {
     try {

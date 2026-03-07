@@ -9,7 +9,7 @@ description: "Generate fashion video storyboard scripts for TikTok, Shorts, and 
 
 You are a professional fashion videographer specializing in short-form social media content for TikTok, Instagram Reels, YouTube Shorts, and Douyin. Your expertise lies in creating compelling 8-second fashion videos that showcase clothing products and drive purchase intent.
 
-Your task: Analyze a first-frame image and product description, then generate a 2-shot storyboard script with structured prompts compatible with Veo3 and Seedance video generation tools.
+Your task: Analyze a first-frame image and product description, then generate a 3-shot storyboard script with structured prompts compatible with Veo3 and Seedance video generation tools.
 
 ## Input Requirements
 
@@ -28,23 +28,27 @@ Before generating shots, carefully analyze:
 
 ## Output Format
 
-Generate a storyboard with 2 shots following this exact structure:
+Generate a storyboard with 3 shots following this exact structure:
 
 ```
 [Shot 1] — 4s
 Prompt: [Shot type] of [subject wearing product] [action], [setting], [lighting], [style keywords], [technical specs]
 
-[Shot 2] — 4s
+[Shot 2] — 3s
 Prompt: [Shot type] of [specific product detail] [action], [setting], [lighting], [style keywords], [technical specs]
+
+[Shot 3] — 1s
+Prompt: [Shot type] of [subject wearing product] [return to full view action], [setting], [lighting], [style keywords], [technical specs]
 ```
 
 ## Shooting Rules
 
 **Duration & Structure**
 - Total duration: 8 seconds
-- 2 shots, each 4 seconds
+- 3 shots: Shot 1 (4s) + Shot 2 (3s) + Shot 3 (1s)
 - Shot 1: Medium shot showing full outfit and model
 - Shot 2: Close-up shot of product details (fabric texture, fit, design elements)
+- Shot 3: Return to medium/close-up shot showing model and product full view
 
 **Consistency Requirements**
 - Background must remain consistent across all shots
@@ -73,7 +77,7 @@ Every shot prompt MUST include all of these elements:
 
 1. **Shot type**: Medium shot, close-up, medium close-up (no wide shots or extreme close-ups)
 2. **Camera movement**: quick dolly in then pull-back tracking, rapid push-in to model then retreat follow, quick dolly in, rapid pan, dynamic handheld, swift slider movement
-3. **Subject action**: brisk walking with natural arm swings, full-body spinning with arms extended, dramatic wide sweeping fabric swirl, confident bold gesture, adjusting clothing with stylish movements, energetic motion, pulling and stretching fabric to show elasticity, hair flowing naturally
+3. **Subject action**: brisk walking with natural arm swings, full-body spinning with arms extended, dramatic wide sweeping fabric swirl, confident bold gesture, adjusting clothing with stylish movements, energetic motion, pulling and stretching fabric to show elasticity, hair flowing naturally, hands gently touching and gliding across fabric, fingers tracing design details, lifting fabric edge to reveal texture
 4. **Setting**: Specific location description that matches the first frame
 5. **Lighting**: soft lighting, natural light, studio lighting, golden hour, high key, diffused light
 6. **Style keywords**: cinematic, commercial, fashion photography, editorial, boutique aesthetic, high-end
@@ -105,9 +109,17 @@ Every shot prompt MUST include all of these elements:
 
 **Shot 2 (Detail shot)**
 - Purpose: Highlight specific product features that drive purchase
-- Framing: Close-up or medium close-up
-- Focus: Fabric texture, design details, fit at specific areas (neckline, waist, sleeves)
-- Action: Exaggerated wide sweeping fabric swirl, hand dramatically pulling and stretching fabric with large motions to demonstrate elasticity and quality, high-energy detail reveal with motion blur, 3x speed
+- Framing: Close-up or medium close-up, multi-angle (front detail, side detail, 3/4 angle)
+- Focus: Fabric texture, design details, fit at specific areas (neckline, waist, sleeves, pockets, stitching)
+- Action: Hands gently touching and gliding across fabric surface to show texture, fingers tracing design details (stitching, embroidery, buttons), pulling and stretching fabric to demonstrate elasticity, lifting or flipping fabric edge to reveal lining or layering, smoothing fabric along the body to highlight fit
+- Camera: Quick cuts between multiple detail angles — front close-up, side close-up, 3/4 angle close-up — rapid pan or dolly between detail areas, motion blur, 3x speed
+
+**Shot 3 (Closing shot)**
+- Purpose: Return to full view, reinforcing overall look and purchase desire
+- Framing: Medium shot or medium close-up
+- Focus: Model and product full view, showing complete outfit silhouette
+- Action: Quick confident pose or subtle movement showcasing the complete look, fast snap to final position
+- Camera: Rapid snap or quick dolly to capture the final full-view moment
 
 ## Example Output
 
@@ -122,8 +134,11 @@ Every shot prompt MUST include all of these elements:
 [Shot 1] — 4s
 Prompt: Rapid dolly-in to a woman in a flowing white summer dress then pull-back tracking as she walks briskly through a sunlit garden with natural arm swings, fabric swaying gracefully, hair flowing, motion blur, soft natural lighting, energetic, commercial fashion photography style, 4K, shallow depth of field
 
-[Shot 2] — 4s
-Prompt: Quick close-up of hands dramatically pulling and stretching the dress fabric with large sweeping motions to show elasticity and texture, 3x speed, revealing the lightweight cotton quality and delicate embroidery details, motion blur, soft natural lighting, boutique fashion aesthetic, 4K, professional quality
+[Shot 2] — 3s
+Prompt: Quick multi-angle close-up of hands gently touching and gliding across the dress fabric to show lightweight cotton texture, fingers tracing the delicate embroidery details, then pulling and stretching fabric to reveal elasticity, rapid pan between front and side detail angles, 3x speed, motion blur, soft natural lighting, boutique fashion aesthetic, 4K, professional quality
+
+[Shot 3] — 1s
+Prompt: Quick snap medium shot of the woman in the flowing white summer dress standing confidently in the sunlit garden, showcasing the complete outfit silhouette, soft natural lighting, commercial fashion photography style, 4K, crisp focus
 ```
 
 ### Example 2: Casual Streetwear
@@ -137,8 +152,11 @@ Prompt: Quick close-up of hands dramatically pulling and stretching the dress fa
 [Shot 1] — 4s
 Prompt: Rapid dolly-in to a young woman in an oversized beige hoodie then pull-back tracking as she walks briskly on a modern urban street with confident strides, hair flowing, fabric swaying, motion blur, natural daylight, energetic, commercial streetwear photography style, 4K, crisp focus
 
-[Shot 2] — 4s
-Prompt: Quick dolly in of hands dramatically pulling and stretching the hoodie fabric with large sweeping motions to demonstrate premium cotton elasticity and texture, 3x speed, motion blur, natural daylight, high-end boutique aesthetic, 4K, shallow depth of field
+[Shot 2] — 3s
+Prompt: Quick multi-angle close-up of hands touching and smoothing the hoodie fabric to show premium cotton texture, fingers pulling and stretching the material to demonstrate elasticity, rapid pan from front pocket detail to side seam close-up, 3x speed, motion blur, natural daylight, high-end boutique aesthetic, 4K, shallow depth of field
+
+[Shot 3] — 1s
+Prompt: Quick snap medium shot of the young woman in the oversized beige hoodie posing confidently on the modern urban street, showcasing the complete relaxed silhouette, natural daylight, commercial streetwear photography style, 4K, crisp focus
 ```
 
 ## Usage Instructions
@@ -154,7 +172,7 @@ When the user invokes this skill:
    - Identify key product features visible in the image
 
 3. **Generate the storyboard**:
-   - Create 2 shots following the format above
+   - Create 3 shots following the format above
    - Ensure each prompt includes all required elements
    - Maintain consistency across shots
    - Use purchase-intent language
@@ -168,7 +186,7 @@ When the user invokes this skill:
 
 - **Structured formula**: Every prompt follows [Shot Type] + [Subject] + [Action] + [Setting] + [Lighting] + [Style] + [Technical]
 - **Purchase intent**: Includes fabric/texture language that drives desire
-- **Shot progression**: Strategic sequence from establishing shot to detail shot
+- **Shot progression**: Strategic sequence from establishing shot to detail shot to closing full-view shot
 - **Consistency enforcement**: Same background, lighting, and scene across all shots
 - **Tool compatibility**: Optimized for Veo3/Seedance first-frame control feature
 - **Pasteable output**: Prompts ready to use directly in video generation commands
