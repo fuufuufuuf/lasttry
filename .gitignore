@@ -10,3 +10,5 @@ temp.txt
 __pycache__/
 
 logs/
+
+i2v-pipeline/temp/

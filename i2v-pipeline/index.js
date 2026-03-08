@@ -31,7 +31,7 @@ function extractTextValue(field) {
   if (!field) return '';
   if (typeof field === 'string') return field;
   if (Array.isArray(field)) {
-    return field.map((item) => (typeof item === 'object' ? item.text || '' : item)).join('');
+    return field.map((item) => (typeof item === 'object' ? item.text || '' : item)).join('\n');
   }
   return String(field);
 }
@@ -59,15 +59,16 @@ async function processRecord(config, token, record) {
     return;
   }
 
-  // Get the first image URL for analysis and first frame
-  const firstImageUrl = generatedImgUrls[0];
-  console.log(`[Info] Using first image: ${firstImageUrl}`);
+  // Randomly pick one image for analysis and first frame
+  const selectedIndex = Math.floor(Math.random() * generatedImgUrls.length);
+  const selectedImageUrl = generatedImgUrls[selectedIndex];
+  console.log(`[Info] Using image [${selectedIndex + 1}/${generatedImgUrls.length}]: ${selectedImageUrl}`);
   console.log(`[Info] Product description length: ${productDesc.length}`);
 
   try {
     // Step 1: Claude analyzes the model image
     console.log('[Claude] Analyzing model image...');
-    const imageAnalysis = await understandModelImage(config.anthropic, firstImageUrl, productDesc);
+    const imageAnalysis = await understandModelImage(config.anthropic, selectedImageUrl, productDesc);
     console.log('[Claude] Image analysis complete');
 
     // Step 2: Generate video storyboard using TTSV skill
@@ -79,10 +80,10 @@ async function processRecord(config, token, record) {
     let videoPath;
     if (config.video_provider === 'alternative' || config.veo?.use_alternative) {
       console.log('[VeoAlt] Using alternative video generation service...');
-      videoPath = await generateVideoAlternative(storyboard, firstImageUrl, config.veo);
+      videoPath = await generateVideoAlternative(storyboard, selectedImageUrl, config.veo);
     } else {
       console.log('[Veo] Using default Veo3.1 service...');
-      videoPath = await generateVideo(storyboard, firstImageUrl, config.veo);
+      videoPath = await generateVideo(storyboard, selectedImageUrl, config.veo);
     }
     console.log('[Video] Video generated successfully');
 
