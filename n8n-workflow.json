@@ -1,0 +1,84 @@
+{
+  "name": "P2M → I2V Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "hours", "hoursInterval": 1 }]
+        }
+      },
+      "name": "Every Hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "id": "a1b2c3d4-0001-0001-0001-000000000001"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hangbei.ngrok-free.dev/webhook/p2m",
+        "options": {}
+      },
+      "name": "Start P2M",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [224, 0],
+      "id": "a1b2c3d4-0001-0001-0001-000000000002"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "p2m-done",
+        "options": {}
+      },
+      "name": "Wait P2M Done",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, -208],
+      "webhookId": "p2m-done",
+      "id": "a1b2c3d4-0001-0001-0001-000000000003"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hangbei.ngrok-free.dev/webhook/i2v",
+        "options": {}
+      },
+      "name": "Start I2V",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [560, -208],
+      "id": "a1b2c3d4-0001-0001-0001-000000000004"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "i2v-done",
+        "options": {}
+      },
+      "name": "Wait I2V Done",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [848, -208],
+      "webhookId": "i2v-done",
+      "id": "a1b2c3d4-0001-0001-0001-000000000005"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every Hour": {
+      "main": [
+        [{ "node": "Start P2M", "type": "main", "index": 0 }]
+      ]
+    },
+    "Wait P2M Done": {
+      "main": [
+        [{ "node": "Start I2V", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -1,0 +1,14 @@
+version: "3"
+agent:
+  authtoken: 3AWCaJQQh77j4R133hpjhPAyGFT_3pbwUf3ErYztipvs33QSw
+
+tunnels:
+  webhook_node:
+    proto: http
+    addr: 3000
+    domain: hangbei.ngrok-free.dev
+
+  webhook_py:
+    proto: http
+    addr: 8000
+    domain: lauren-moodier-adjunctly.ngrok-free.dev
