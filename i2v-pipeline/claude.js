@@ -8,6 +8,7 @@ Analyze the provided image and extract:
 3. Scene/background (environment, props, setting)
 4. Lighting conditions (type, direction, mood)
 5. Camera angle and framing
+6. Product category and recommended showcase actions for video
 
 Format your response as structured JSON with these exact keys:
 {
@@ -17,9 +18,11 @@ Format your response as structured JSON with these exact keys:
     "position": "body position in frame"
   },
   "clothing": {
+    "type": "specific garment type (e.g. maxi dress, cargo pants, bomber jacket, knit sweater, pleated skirt)",
     "fit": "how the clothing fits",
     "fabric": "visible fabric characteristics",
-    "keyFeatures": ["feature1", "feature2", ...]
+    "keyFeatures": ["feature1", "feature2", ...],
+    "highlightAreas": ["the 2-3 most visually striking areas to showcase, e.g. neckline, waist belt, pocket detail, embroidery, zipper"]
   },
   "scene": {
     "environment": "location/setting description",
@@ -34,6 +37,12 @@ Format your response as structured JSON with these exact keys:
   "camera": {
     "angle": "camera angle",
     "framing": "shot framing (wide, medium, close)"
+  },
+  "videoActions": {
+    "shot1_action": "recommended model action for establishing shot based on this specific product (e.g. spinning to show dress flow, walking to show pants drape, unzipping jacket)",
+    "shot2_details": ["2-3 specific detail areas to focus on with close-up, based on visible product features"],
+    "shot2_handActions": ["2-3 specific hand interactions suited to this product (e.g. running fingers along embroidery, pulling stretchy waistband, flipping collar, sliding zipper)"],
+    "shot3_action": "recommended closing pose/action that best shows the complete look of this specific product"
   }
 }`;
 
@@ -74,7 +83,7 @@ Please analyze this model image and provide the structured analysis.`;
             ...messages
           ],
           temperature: 0.3,
-          max_tokens: 1000
+          max_tokens: 1500
         })
       });
 

@@ -77,6 +77,12 @@ async function generateVideoAlternative(storyboard, firstImageUrl, config) {
         lastError = err;
         console.error(`[VeoAlt] Attempt ${attempt}/${maxRetries} failed:`, err.message);
 
+        // If the task explicitly failed, don't retry — bail out immediately
+        if (err.message && err.message.startsWith('Video generation failed:')) {
+          console.log(`[VeoAlt] Task failed, skipping retries.`);
+          break;
+        }
+
         if (attempt < maxRetries) {
           const waitTime = attempt * 15000; // Progressive backoff: 15s, 30s, 45s
           console.log(`[VeoAlt] Waiting ${waitTime/1000}s before retry...`);

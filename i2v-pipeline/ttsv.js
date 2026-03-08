@@ -13,13 +13,23 @@ async function generateVideoStoryboard(config, imageAnalysis, productDesc) {
 
   const systemPrompt = skillContent;
 
+  const isMinimalDesc = !productDesc || productDesc.length < 30;
+  const productSection = isMinimalDesc
+    ? `Product info (title only, limited detail available):
+${productDesc || 'N/A'}
+
+NOTE: Product description is minimal. Rely heavily on the image analysis (especially "clothing" and "videoActions" fields) to determine product type, features, and appropriate showcase actions.`
+    : `Product description:
+${productDesc}`;
+
   const userMessage = `I need to create a video storyboard for a fashion product.
 
 First-frame analysis:
 ${JSON.stringify(imageAnalysis, null, 2)}
 
-Product description:
-${productDesc}
+${productSection}
+
+IMPORTANT: The first-frame analysis contains a "videoActions" field with product-specific action recommendations, and "clothing.highlightAreas" with the key visual areas to showcase. You MUST use these to tailor each shot's actions and detail focus — do NOT use generic template actions. Every action, hand gesture, and detail close-up must be specific to THIS product's features.
 
 Please generate a 3-shot video storyboard following the TTSV format. The video should be 8 seconds total: Shot 1 (4s), Shot 2 (3s), Shot 3 (1s).`;
 

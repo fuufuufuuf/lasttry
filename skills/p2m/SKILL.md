@@ -55,6 +55,7 @@ When this skill is invoked, follow these steps:
 
 - **Western Model Only**: Model MUST have Western/European appearance and features
 - **Standing Pose Only**: Model MUST be standing in all scenes to best showcase the product silhouette, fit, and full-length design
+- **Empty Hands**: Model MUST NOT hold anything (no coffee cups, phones, bags, books, or any props in hands). Hands should be naturally placed — at sides, in pockets, lightly touching clothing, or in a relaxed gesture appropriate to the scene and product being showcased
 - **No White Backgrounds**: Absolutely NO studio white background or plain backdrop shots
 - **Simple Scenes**: Keep environments simple and uncluttered - avoid overly complex or busy settings
 - **Lifestyle Focus**: Scenes must feel natural and relatable, not artificially staged
@@ -104,7 +105,7 @@ Styling suggestion: Everyday casual wear
 **Product Focus:** T-shirt's relaxed drape and full-length fit visible as model stands naturally. Stone-washed finish catches the soft light, showing quality and lived-in comfort.
 
 ## Scene 2: Urban Farmer's Market
-**Setting:** Outdoor farmer's market with colorful produce stands in soft focus background. Model standing while browsing vegetables, canvas tote bag over shoulder.
+**Setting:** Outdoor farmer's market with colorful produce stands in soft focus background. Model standing while browsing, hands naturally at sides, canvas tote bag over shoulder.
 **Lighting:** Overcast natural daylight providing even, flattering illumination without harsh shadows.
 **Mood/Atmosphere:** Active, health-conscious, community-oriented lifestyle. Sustainable living aesthetic.
 **Product Focus:** T-shirt's breathable cotton material and full silhouette showcased in standing position. Clean heather grey complements fresh produce colors without competing.
@@ -136,13 +137,13 @@ Styling suggestion: Office to evening versatility
 **Expected Output:**
 
 ## Scene 1: Modern Office Setting
-**Setting:** Bright, contemporary office space with glass partitions and greenery. Model at a standing desk reviewing documents, professional yet approachable environment.
+**Setting:** Bright, contemporary office space with glass partitions and greenery. Model standing near a desk, hands relaxed at sides, professional yet approachable environment.
 **Lighting:** Bright diffused office lighting mixed with natural window light, creating professional clarity without harshness.
 **Mood/Atmosphere:** Confident, capable, modern professional. Elevated workwear that commands respect.
 **Product Focus:** Silk's natural sheen catches light beautifully in office environment. Elegant drape visible as model moves, showing quality and sophistication.
 
 ## Scene 2: Wine Bar Evening
-**Setting:** Intimate wine bar with warm ambient lighting, exposed brick walls. Model at bar with wine glass, engaged in conversation (conversation partner out of frame).
+**Setting:** Intimate wine bar with warm ambient lighting, exposed brick walls. Model standing at bar, hands resting lightly on the counter, engaged in conversation (conversation partner out of frame).
 **Lighting:** Warm, flattering Edison bulb lighting creating gentle highlights on silk's surface.
 **Mood/Atmosphere:** Sophisticated after-work transition, effortless elegance. Social confidence.
 **Product Focus:** Silk's luxurious sheen elevated by warm evening light. Blouse maintains structure while showing fluid movement, demonstrating day-to-night versatility.
@@ -174,19 +175,19 @@ Styling suggestion: Autumn/winter outerwear
 **Expected Output:**
 
 ## Scene 1: Autumn City Street
-**Setting:** Tree-lined urban street with fallen leaves, brownstone buildings in background. Model walking purposefully, coffee cup in hand, early morning golden hour.
+**Setting:** Tree-lined urban street with fallen leaves, brownstone buildings in background. Model walking purposefully, hands relaxed at sides, early morning golden hour.
 **Lighting:** Warm autumn morning light creating long shadows and golden tones that complement camel color.
 **Mood/Atmosphere:** Urban sophistication, purposeful morning routine, city life elegance.
 **Product Focus:** Coat's structured silhouette and oversized fit evident in walking motion. Wool texture catches golden light, showing quality material and substantial weight.
 
 ## Scene 2: City Park Stroll
-**Setting:** City park path with autumn foliage in soft focus background. Model standing by a tree, holding a thermos, coat belted loosely.
+**Setting:** City park path with autumn foliage in soft focus background. Model standing by a tree, hands in coat pockets, coat belted loosely.
 **Lighting:** Soft overcast autumn daylight providing even, cool-toned natural light.
 **Mood/Atmosphere:** Contemplative, leisurely weekend, cozy comfort. Intellectual casual.
 **Product Focus:** Coat's full mid-length silhouette and double-breasted front clearly showcased in standing position. Warmth and quality implied through structured drape.
 
 ## Scene 3: Train Platform Commute
-**Setting:** Modern train platform with clean lines, minimal urban architecture. Model checking phone while waiting, other commuters blurred in background.
+**Setting:** Modern train platform with clean lines, minimal urban architecture. Model standing with hands relaxed at sides while waiting, other commuters blurred in background.
 **Lighting:** Urban daylight with architectural shadows, creating dynamic interplay of light and structure.
 **Mood/Atmosphere:** Contemporary urban lifestyle, daily rhythm, practical elegance.
 **Product Focus:** Mid-length cut practical for movement and transit. Coat maintains structure even in casual standing position, demonstrating quality construction.
@@ -242,6 +243,7 @@ Always structure your output following this exact format:
   - Lighting that doesn't serve the fabric (harsh light on delicate materials)
   - Scenes so complex they distract from the product
   - Generic "lifestyle" clichés without authentic context
+  - Model holding props (cups, phones, bags, books) — hands must always be empty and naturally placed
   - Hallucinated product details: Never describe colors, patterns, prints, or construction details that are NOT clearly visible in the reference images. Describe only what IS shown.
 
 - **Balancing Product and Scene:**
