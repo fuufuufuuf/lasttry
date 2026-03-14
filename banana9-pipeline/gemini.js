@@ -48,7 +48,7 @@ async function generateGrid9Image(apiKey, nanoBananaPrompt, productImgUrl, model
     const contents = [
       { inlineData: { data: productBase64, mimeType: productImg.mimeType } },
       { inlineData: { data: modelBase64, mimeType: modelImg.mimeType } },
-      { text: nanoBananaPrompt },
+      { text: nanoBananaPrompt + '\n\nIMPORTANT: The output image MUST be in 9:16 portrait aspect ratio (vertical orientation, e.g. 1080x1920 pixels).' },
     ];
 
     console.log(`[Gemini] Generating 12-grid image with model: ${MODEL_ID}`);
