@@ -68,8 +68,10 @@ async function analyzeAndGeneratePrompt(anthropicConfig, productDesc, imgUrls) {
 
   // If URL not supported, retry with base64
   if (!res.ok) {
-    const text = await res.text();
-    if (text.includes('不支持的图片类型: url') || text.includes('url')) {
+    const errorText = await res.text();
+    console.log(`[Claude] First request failed (${res.status}): ${errorText.slice(0, 300)}`);
+
+    if (errorText.includes('不支持的图片类型: url') || errorText.includes('url')) {
       console.log('[Claude] URL format not supported, converting to base64...');
       const base64Images = await Promise.all(
         imgUrls.slice(0, 2).map(async (url) => {
@@ -105,11 +107,13 @@ async function analyzeAndGeneratePrompt(anthropicConfig, productDesc, imgUrls) {
           messages: [{ role: 'user', content: userContent }],
         }),
       });
-    }
 
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Claude API error ${res.status}: ${text.slice(0, 200)}`);
+      if (!res.ok) {
+        const retryText = await res.text();
+        throw new Error(`Claude API error ${res.status}: ${retryText.slice(0, 200)}`);
+      }
+    } else {
+      throw new Error(`Claude API error ${res.status}: ${errorText.slice(0, 200)}`);
     }
   }
 
