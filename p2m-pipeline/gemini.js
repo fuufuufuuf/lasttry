@@ -48,7 +48,7 @@ async function generateModelImage(apiKey, prompt, refImageUrls) {
   const contents = [
     ...imageParts,
     {
-      text: `You are a professional fashion e-commerce photographer. Based on these product reference images and the following photoshoot scenario, generate a high-quality lifestyle fashion photo with a Western model standing and wearing this product.\n\n${prompt}\n\nIMPORTANT: The model MUST be standing. Western/European appearance. Natural lifestyle setting as described. Product must be clearly visible and remain the focal point.\nIMPORTANT: The output image MUST be in 9:16 portrait aspect ratio (vertical orientation, e.g. 1080x1920 pixels).`,
+      text: `You are a professional fashion e-commerce photographer. Based on these product reference images and the following photoshoot scenario, generate a high-quality lifestyle fashion photo with a Western model standing and wearing this product.\n\n${prompt}\n\nIMPORTANT: The model MUST be standing. Western/European appearance. Natural lifestyle setting as described. Product must be clearly visible and remain the focal point.`,
     },
   ];
 
@@ -60,6 +60,10 @@ async function generateModelImage(apiKey, prompt, refImageUrls) {
       contents,
       config: {
         responseModalities: ['TEXT', 'IMAGE'],
+        imageConfig: {
+          aspectRatio: '9:16',
+          imageSize: '1K',
+        },
       },
     });
 

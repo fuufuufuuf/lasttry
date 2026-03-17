@@ -40,10 +40,9 @@ async function processRecord(config, token, record) {
   const fields = record.fields;
   const recordId = record.record_id;
   const handle = extractTextValue(fields.handle);
-  const videoId = extractTextValue(fields.video_id);
-  const productId = extractTextValue(fields.product_id) || videoId || recordId;
+  const productId = extractTextValue(fields.product_id);
 
-  console.log(`\n--- Processing record: ${handle} (Product ID: ${productId}) ---`);
+  console.log(`\n--- Processing record: ${handle} (Record ID: ${recordId}) ---`);
 
   // Extract required fields
   const productDesc = extractTextValue(fields.product_desc) || extractTextValue(fields.product_title);

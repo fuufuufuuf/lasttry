@@ -31,7 +31,7 @@ ${productSection}
 
 IMPORTANT: The first-frame analysis contains a "videoActions" field with product-specific action recommendations, and "clothing.highlightAreas" with the key visual areas to showcase. You MUST use these to tailor each shot's actions and detail focus — do NOT use generic template actions. Every action, hand gesture, and detail close-up must be specific to THIS product's features.
 
-Please generate a 3-shot video storyboard following the TTSV format. The video should be 8 seconds total: Shot 1 (4s), Shot 2 (3s), Shot 3 (1s).`;
+Please generate a 3-shot video storyboard following the TTSV format. The video should be 8 seconds total: Shot 1 (2s), Shot 2 (4s), Shot 3 (2s).`;
 
   const maxRetries = 3;
   let lastError;
@@ -105,7 +105,7 @@ Please generate a 3-shot video storyboard following the TTSV format. The video s
 
 function parseStoryboard(content) {
   const shots = [];
-  const fixedDurations = [4, 3, 1];
+  const fixedDurations = [2, 4, 2];
 
   // Match shot patterns like [Shot 1 — Hook] — 4s or **[Shot 1]** 3s
   const shotRegex = /\*?\*?\[Shot\s+(\d+)[^\]]*\]\*?\*?[^\n]*?(\d+)s[^\n]*\n+Prompt:\s*(.+?)(?=\n\n\*?\*?\[Shot|\n\n```|\n\n---|\n\n##|$)/gs;

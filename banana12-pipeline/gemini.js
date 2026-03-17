@@ -40,7 +40,13 @@ async function generateGrid12Image(apiKey, nanoBananaPrompt, productImgUrl, mode
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
       model: MODEL_ID,
-      generationConfig: { responseModalities: ['Text', 'Image'] },
+      generationConfig: {
+        responseModalities: ['Text', 'Image'],
+        imageConfig: {
+          aspectRatio: '9:16',
+          imageSize: '1K',
+        },
+      },
     });
 
     // Image 1 = product photo (garment ground truth)
@@ -48,7 +54,7 @@ async function generateGrid12Image(apiKey, nanoBananaPrompt, productImgUrl, mode
     const contents = [
       { inlineData: { data: productBase64, mimeType: productImg.mimeType } },
       { inlineData: { data: modelBase64, mimeType: modelImg.mimeType } },
-      { text: nanoBananaPrompt + '\n\nIMPORTANT: The output image MUST be in 9:16 portrait aspect ratio (vertical orientation, e.g. 1080x1920 pixels).' },
+      { text: nanoBananaPrompt },
     ];
 
     console.log(`[Gemini] Generating 12-grid image with model: ${MODEL_ID}`);

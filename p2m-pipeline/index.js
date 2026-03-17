@@ -40,7 +40,7 @@ async function processRecord(config, token, record) {
   const handle = extractTextValue(fields.handle);
 
   const videoId = extractTextValue(fields.video_id);
-  console.log(`\n--- Processing record: ${handle} (${videoId || recordId}) ---`);
+  console.log(`\n--- Processing record: ${handle} (${recordId}) ---`);
 
   const productDesc = extractTextValue(fields.product_desc) || extractTextValue(fields.product_title);
   const sourceImgsRaw = extractTextValue(fields.product_source_imgs);
