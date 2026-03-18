@@ -24,50 +24,33 @@ Before generating shots, carefully analyze the provided first-frame analysis JSO
 1. **Product type** (`clothing.type`): Identify the specific garment category to select appropriate showcase actions
 2. **Key features** (`clothing.keyFeatures`): These are the selling points that MUST be highlighted in the video
 3. **Highlight areas** (`clothing.highlightAreas`): These are the specific areas Shot 2 MUST focus on
-4. **Recommended actions** (`videoActions`): Use these product-specific actions directly — do NOT substitute with generic actions
-5. **Scene/background** (`scene`): Must remain consistent across all shots
-6. **Lighting** (`lighting`): Must remain consistent across all shots
+4. **Scene/background** (`scene`): Must remain consistent across all shots
+5. **Lighting** (`lighting`): Must remain consistent across all shots
 
-**CRITICAL RULE**: Every shot's action must be derived from the actual product analysis. If the analysis says the product is a pleated skirt with waist belt detail, the video must show skirt-specific actions (spinning to show pleats, hands adjusting the belt) — NOT generic actions like "walking briskly" or "pulling fabric".
-
-## Product-Specific Action Mapping
-
-Use the `clothing.type` and `videoActions` from the analysis to select appropriate actions. Here are reference mappings — always prefer the `videoActions` recommendations from the analysis over these defaults:
-
-| Product Type | Shot 1 Action | Shot 2 Detail Focus | Shot 2 Hand Actions | Shot 3 Closing |
-|---|---|---|---|---|
-| Dress / Skirt | Spinning to show fabric flow, walking with skirt swaying | Hemline movement, waist detail, fabric drape | Lifting hem to show layers, smoothing waist area, touching fabric texture | Confident pose with slight spin |
-| Pants / Trousers | Walking to show drape and fit, stepping/striding | Waistband, pocket detail, leg silhouette | Hands in pockets, pulling waistband to show stretch, smoothing leg line | Standing pose showing full leg line |
-| Jacket / Coat | Opening/closing jacket, turning to show back | Collar, zipper/buttons, sleeve cuff, lining | Flipping collar, sliding zipper, adjusting cuffs, opening to reveal lining | Arms slightly open showing jacket silhouette |
-| Hoodie / Sweatshirt | Casual walk with relaxed movement | Hood detail, kangaroo pocket, fabric weight | Pulling up hood, hands in pocket, stretching fabric to show weight | Relaxed confident stance |
-| Blouse / Shirt | Turning with fabric flowing, arm movement | Collar, button detail, sleeve design, fabric sheen | Adjusting collar, touching buttons, rolling sleeves | Poised standing pose |
-| Knit / Sweater | Gentle movement showing fabric drape | Knit texture, neckline, ribbing detail | Running fingers over knit texture, stretching to show elasticity | Cozy confident pose |
-| Swimwear / Lingerie | Confident walk or turn | Strap detail, fabric texture, cut design | Adjusting strap, smoothing fabric | Confident pose showing full design |
-
-**If the product type doesn't match any above, derive actions from `videoActions` in the analysis.**
+**CRITICAL RULE**: Shot 2 must use intense hand-guided actions (pulling, tugging, stretching) to showcase the product's `highlightAreas`. Every detail must be revealed through aggressive hand interaction, not passive camera panning.
 
 ## Output Format
 
 Generate a storyboard with 3 shots following this exact structure:
 
 ```
-[Shot 1] — 2s
-Prompt: [Shot type] of [subject wearing product] [action], [setting], [lighting], [style keywords], [technical specs]
+[Shot 1] — 1s
+Prompt: [Shot type] of [subject wearing product], [setting], [lighting], [style keywords], [technical specs]
 
-[Shot 2] — 4s
-Prompt: [Shot type] of [specific product detail] [action], [setting], [lighting], [style keywords], [technical specs]
+[Shot 2] — 5s
+Prompt: [Shot type] of [hand-guided detail showcase] [pulling/tugging actions], [setting], [lighting], [style keywords], [technical specs]
 
 [Shot 3] — 2s
-Prompt: [Shot type] of [subject wearing product] [return to full view action], [setting], [lighting], [style keywords], [technical specs]
+Prompt: [Shot type] of [subject wearing product] [closing action], [setting], [lighting], [style keywords], [technical specs]
 ```
 
 ## Shooting Rules
 
 **Duration & Structure**
 - Total duration: 8 seconds
-- 3 shots: Shot 1 (2s) + Shot 2 (4s) + Shot 3 (2s)
-- Shot 1: Medium shot rapidly pushing in to close-up, fast-paced establishing shot
-- Shot 2: Close-up detail shots with model guiding viewer attention to product features (fabric texture, fit, design elements from multiple close-up angles)
+- 3 shots: Shot 1 (1s) + Shot 2 (5s) + Shot 3 (2s)
+- Shot 1: Ultra-fast flash establishing shot, aggressive snap push-in from medium to close-up, no complex model action
+- Shot 2: Close-up detail shots with intense hand-guided showcase — hands actively pulling, tugging, stretching fabric to demonstrate texture, quality, and fit from multiple angles
 - Shot 3: Medium shot ending pose, model performs a clear closing action to wrap up the video
 
 **Consistency Requirements**
@@ -97,7 +80,7 @@ Every shot prompt MUST include all of these elements:
 
 1. **Shot type**: Medium shot, close-up, medium close-up (no wide shots or extreme close-ups)
 2. **Camera movement**: rapid aggressive dolly-in from medium to close-up, quick push-in without pull-back, rapid pan, dynamic handheld, swift slider movement
-3. **Subject action**: Must be derived from `videoActions` in the analysis — product-specific actions like spinning for dresses, striding for pants, zipper actions for jackets. Include hand interactions from `videoActions.shot2_handActions`. Avoid generic actions that don't relate to the specific product.
+3. **Subject action**: Shot 1 — minimal, just a pose or stance (1s allows no complex movement). Shot 2 — intense hand-guided actions: pulling, tugging, stretching, pinching fabric to showcase details. Shot 3 — clear closing action from `videoActions.shot3_action`. Hands must be bold and exaggerated in Shot 2, never gentle or passive.
 4. **Setting**: Specific location description that matches the first frame
 5. **Lighting**: soft lighting, natural light, studio lighting, golden hour, high key, diffused light
 6. **Style keywords**: cinematic, commercial, fashion photography, editorial, boutique aesthetic, high-end
@@ -120,20 +103,26 @@ Every shot prompt MUST include all of these elements:
 
 ## Shot Progression Strategy
 
-**Shot 1 (Establishing shot)**
-- Purpose: Fast-paced introduction, quickly establish the outfit and scene then rapidly push into close-up
-- Framing: Start medium shot, rapidly push in to medium close-up or close-up by end of shot
-- Focus: Full body or 3/4 body at start, quickly transitioning to closer framing to build momentum into Shot 2
-- Action: **Use `videoActions.shot1_action` from the analysis.** Camera rapidly pushes in toward the model without pulling back — fast, aggressive dolly-in that ends on a close framing. The model's action must match the product type (e.g., spinning for dresses, striding for pants, opening jacket for outerwear). Keep the pace intense and quick due to the short 2s duration
-- Camera: Rapid aggressive dolly-in from medium shot to close-up, no pull-back, fast-paced and punchy, motion blur
+**Shot 1 (Flash establishing — 1s)**
+- Purpose: Ultra-fast introduction, instantly establish the outfit and scene
+- Framing: Start medium shot, aggressive snap push-in to close-up
+- Focus: Flash the full look, immediately transition to detail
+- Action: Minimal model action — the camera does the work. One simple pose or stance, no complex movements. 1 second leaves no room for spinning, walking, or multi-step actions
+- Camera: Aggressive snap dolly-in from medium to close-up, extremely fast, motion blur
 
-**Shot 2 (Detail shot)**
-- Purpose: Highlight specific product features that drive purchase, with model actively guiding the viewer's attention to key details
-- Framing: Close-up only — stay tight on the product details throughout the entire shot, multi-angle close-ups (front detail, side detail, back detail, 3/4 angle) — must include at least 2 different close-up angles to fully showcase the product
-- Focus: **Use `videoActions.shot2_details` and `clothing.highlightAreas` from the analysis.** Must focus on THIS product's actual features, not generic fabric shots. Show details from multiple close-up perspectives (e.g., front texture close-up + side silhouette close-up + back design close-up)
-- Model guidance: The model must actively guide the viewer's attention through deliberate gestures — e.g., hands tracing along a neckline to draw eyes to the collar detail, fingers pinching fabric to demonstrate texture, turning body to reveal side or back details, lifting or adjusting the garment to expose hidden features. The model's body language should say "look here"
-- Action: **Use `videoActions.shot2_handActions` from the analysis.** Hand interactions must be specific to the product (e.g., sliding zipper for jackets, lifting hem for dresses, pulling waistband for pants — NOT generic "touching fabric"). Combine hand actions with body turns to present details from multiple close-up angles
-- Camera: Quick cuts between multiple close-up angles — front close-up, side close-up, back close-up, 3/4 angle close-up — rapid pan or dolly following the model's guiding gestures between detail areas, motion blur, 3x speed. Do NOT pull out to medium shot during this shot
+**Shot 2 (Hand-guided detail showcase — 5s)**
+- Purpose: Intense, hands-on demonstration of product details, fabric quality, and texture
+- Framing: Tight close-ups throughout — never pull out to medium shot. Multi-angle close-ups from at least 3 different perspectives
+- Focus: Use `clothing.highlightAreas` from the analysis. Every detail must be revealed through hand interaction, not passive camera panning
+- Hand-guided showcase: Hands are the star of this shot. The model's hands must aggressively interact with the product:
+  - Pulling fabric taut to show weave and texture
+  - Tugging seams and hems to demonstrate construction quality
+  - Stretching material to reveal elasticity and recovery
+  - Pinching and lifting layers to expose inner fabric or lining
+  - Gripping and releasing to show fabric drape and weight
+  - Sliding fingers along stitching, zippers, buttons, or embellishments
+- Speed & intensity: All hand actions must be fast, decisive, and exaggerated. No gentle touching — every gesture should be bold and attention-grabbing. 3x speed pacing
+- Camera: Rapid cuts between tight close-up angles following hand movements, aggressive tracking, motion blur
 
 **Shot 3 (Closing shot)**
 - Purpose: Return to medium shot for a clear ending, reinforcing overall look and leaving a strong final impression
@@ -149,18 +138,18 @@ Every shot prompt MUST include all of these elements:
 **Input**:
 - Image: Woman in white flowing dress in sunlit garden
 - Product: Lightweight cotton summer dress with embroidered details
-- Analysis highlights: `clothing.type: "maxi dress"`, `highlightAreas: ["embroidered bodice", "flowing hemline"]`, `videoActions.shot1_action: "spinning to show dress flow and hemline movement"`, `videoActions.shot2_handActions: ["running fingers along embroidery detail", "lifting hem to show layered fabric"]`
+- Analysis highlights: `clothing.type: "maxi dress"`, `highlightAreas: ["embroidered bodice", "flowing hemline", "layered fabric"]`
 
 **Output**:
 ```
-[Shot 1] — 2s
-Prompt: Rapid aggressive dolly-in from medium shot to close-up of a woman in a flowing white maxi dress as she spins gracefully in a sunlit garden, dress hemline swirling outward, embroidered bodice catching the light, camera pushing in fast without pulling back, hair flowing, motion blur, soft natural lighting, energetic, commercial fashion photography style, 4K, shallow depth of field
+[Shot 1] — 1s
+Prompt: Aggressive snap dolly-in from medium shot to close-up of a woman in a flowing white maxi dress standing in a sunlit garden, embroidered bodice catching the light, camera snapping in extremely fast, motion blur, soft natural lighting, commercial fashion photography style, 4K, shallow depth of field
 
-[Shot 2] — 4s
-Prompt: Quick multi-angle close-up as the model's fingers trace along the delicate embroidery on the bodice drawing the viewer's eye to the pattern, then she turns to reveal the side drape while hands lift the layered hem to show the flowing fabric underneath, rapid pan from front embroidery detail to side silhouette to hemline movement, 3x speed, motion blur, soft natural lighting, boutique fashion aesthetic, 4K, professional quality
+[Shot 2] — 5s
+Prompt: Rapid multi-angle tight close-up as the model's hands pull the embroidered bodice fabric taut to reveal the intricate stitch pattern, fingers tug the hemline outward stretching it to show the layered construction underneath, hands grip and release the skirt fabric demonstrating its flowing drape and weight, then pinch and lift the inner layer to expose the lining quality, rapid aggressive cuts between front embroidery close-up to side hem close-up to fabric grip-and-release close-up, 3x speed, motion blur, soft natural lighting, boutique fashion aesthetic, 4K, professional quality
 
 [Shot 3] — 2s
-Prompt: Quick dolly-out to medium shot of the woman finishing a spin in the flowing white maxi dress in the sunlit garden, dress settling around her as she strikes a confident pose with one hand on hip and a smile to camera, showcasing the complete silhouette, soft natural lighting, commercial fashion photography style, 4K, crisp focus
+Prompt: Quick dolly-out to medium shot of the woman in the flowing white maxi dress in the sunlit garden, she strikes a confident pose with one hand on hip and a smile to camera, showcasing the complete silhouette, soft natural lighting, commercial fashion photography style, 4K, crisp focus
 ```
 
 ### Example 2: Casual Streetwear Hoodie
@@ -168,18 +157,18 @@ Prompt: Quick dolly-out to medium shot of the woman finishing a spin in the flow
 **Input**:
 - Image: Young woman in oversized hoodie on urban street
 - Product: Premium cotton oversized hoodie with minimalist design
-- Analysis highlights: `clothing.type: "oversized hoodie"`, `highlightAreas: ["kangaroo pocket", "hood detail", "ribbed cuffs"]`, `videoActions.shot1_action: "casual confident walk with hands in pocket"`, `videoActions.shot2_handActions: ["pulling up hood to show structure", "hands sliding into kangaroo pocket", "stretching ribbed cuff to show elasticity"]`
+- Analysis highlights: `clothing.type: "oversized hoodie"`, `highlightAreas: ["kangaroo pocket", "hood detail", "ribbed cuffs"]`
 
 **Output**:
 ```
-[Shot 1] — 2s
-Prompt: Rapid aggressive dolly-in from medium shot to close-up of a young woman in an oversized beige hoodie as she walks casually on a modern urban street with hands sliding into the kangaroo pocket, camera pushing in fast without pulling back, fabric swaying with relaxed movement, motion blur, natural daylight, energetic, commercial streetwear photography style, 4K, crisp focus
+[Shot 1] — 1s
+Prompt: Aggressive snap dolly-in from medium shot to close-up of a young woman in an oversized beige hoodie standing on a modern urban street, hands at sides, camera snapping in extremely fast, motion blur, natural daylight, commercial streetwear photography style, 4K, crisp focus
 
-[Shot 2] — 4s
-Prompt: Quick multi-angle close-up as the model pulls up the structured hood to showcase its shape while turning her head to guide attention, then hands slide into the kangaroo pocket highlighting its depth from a side angle, fingers stretch the ribbed cuff toward camera to demonstrate elasticity, rapid pan following her gestures from front hood detail to side pocket to cuff close-up, 3x speed, motion blur, natural daylight, high-end boutique aesthetic, 4K, shallow depth of field
+[Shot 2] — 5s
+Prompt: Rapid multi-angle tight close-up as the model's hands grip the hood and pull it up forcefully to show its structured shape, then tug the hood brim stretching it to demonstrate thickness, hands plunge into the kangaroo pocket and pull the opening wide to reveal its depth, fingers grip the ribbed cuff and stretch it aggressively toward camera showing elasticity then release to snap back, rapid aggressive cuts between front hood close-up to side pocket close-up to cuff stretch-and-release close-up, 3x speed, motion blur, natural daylight, high-end boutique aesthetic, 4K, shallow depth of field
 
 [Shot 3] — 2s
-Prompt: Quick dolly-out to medium shot of the young woman in the oversized beige hoodie on the modern urban street, she stops walking and turns sharply to face camera with a relaxed smile and hands tucked in kangaroo pocket, striking a confident ending stance, showcasing the complete relaxed oversized silhouette, natural daylight, commercial streetwear photography style, 4K, crisp focus
+Prompt: Quick dolly-out to medium shot of the young woman in the oversized beige hoodie on the modern urban street, she turns sharply to face camera with a relaxed smile and hands tucked in kangaroo pocket, striking a confident ending stance, showcasing the complete relaxed oversized silhouette, natural daylight, commercial streetwear photography style, 4K, crisp focus
 ```
 
 ## Usage Instructions
