@@ -1,10 +1,11 @@
 const fs = require('fs').promises;
 const path = require('path');
 const axios = require('axios');
+const MODEL_CONFIGS = require('./model-configs.json');
 
 /**
- * Alternative Veo API implementation using a different third-party service
- * This service uses a single endpoint for task creation and polling
+ * Alternative video API implementation supporting multiple models.
+ * Model-specific parameters (size, duration, etc.) are read from model-configs.json.
  */
 async function generateVideoAlternative(storyboard, firstImageUrl, config) {
   // Create temp directory for this video generation
@@ -12,34 +13,39 @@ async function generateVideoAlternative(storyboard, firstImageUrl, config) {
   await fs.mkdir(tempDir, { recursive: true });
 
   try {
-    // Build full prompt from entire storyboard
-    // const fullPrompt = storyboard.shots.map(shot => shot.prompt).join('\n');
+    const modelKey = config?.alt_model || 'veo';
+    const modelConfig = MODEL_CONFIGS[modelKey];
+    if (!modelConfig) {
+      throw new Error(`Unknown model "${modelKey}". Available models: ${Object.keys(MODEL_CONFIGS).join(', ')}`);
+    }
+
     const fullPrompt = storyboard.fullStoryboard;
+    const isLandscape = config?.orientation === 'landscape';
 
+    console.log(`[VideoAlt] Generating video with model: ${modelConfig.model}`);
+    console.log(`[VideoAlt] Prompt: ${fullPrompt}`);
 
-    console.log(`[VeoAlt] Generating video with full storyboard prompt...`);
-    console.log(`[VeoAlt] Prompt: ${fullPrompt}`);
-
-    // Prepare the request payload for alternative API
+    // Build request payload from model config
     const requestPayload = {
-      images: [firstImageUrl],  // Array of image URLs
-      model: config?.alt_model || 'veo3.1-fast-components',
-      orientation: 'portrait',  // For TikTok/Douyin vertical format
+      images: [firstImageUrl],
+      model: modelConfig.model,
       prompt: fullPrompt,
-      size: '720x1280',  // Standard vertical video size
-      duration: 8,  // Default 8s
-      aspect_ratio: '9:16'  // Vertical aspect ratio
+      size: modelConfig.size,
+      aspect_ratio: modelConfig.aspect_ratio,
+      duration: modelConfig.duration,
     };
 
-    // Optional: enable upsampling for landscape videos
-    if (config?.orientation === 'landscape') {
-      requestPayload.orientation = 'landscape';
-      requestPayload.size = '1280x720';
-      requestPayload.aspect_ratio = '16:9';
+    // Add orientation field only if the model supports it
+    if (modelConfig.orientation_field) {
+      requestPayload.orientation = isLandscape ? 'landscape' : 'portrait';
+    }
+
+    // Add enable_upsample only if model supports it and orientation is landscape
+    if (modelConfig.enable_upsample && isLandscape) {
       requestPayload.enable_upsample = true;
     }
 
-    console.log('[VeoAlt] Submitting video generation request...');
+    console.log('[VideoAlt] Submitting video generation request...');
 
     const maxRetries = 3;
     let lastError;
@@ -61,31 +67,31 @@ async function generateVideoAlternative(storyboard, firstImageUrl, config) {
         );
 
         const taskData = response.data;
-        console.log(`[VeoAlt] Task created: ${taskData.id} (Status: ${taskData.status})`);
+        console.log(`[VideoAlt] Task created: ${taskData.id} (Status: ${taskData.status})`);
 
-        // Poll for completion using the same endpoint
+        // Poll for completion
         videoUrl = await pollAlternativeAPI(config, taskData.id);
 
         if (!videoUrl) {
           throw new Error('Video generation completed but no URL returned');
         }
 
-        console.log(`[VeoAlt] Video generated successfully`);
+        console.log(`[VideoAlt] Video generated successfully`);
         break;
 
       } catch (err) {
         lastError = err;
-        console.error(`[VeoAlt] Attempt ${attempt}/${maxRetries} failed:`, err.message);
+        console.error(`[VideoAlt] Attempt ${attempt}/${maxRetries} failed:`, err.message);
 
         // If the task explicitly failed, don't retry — bail out immediately
         if (err.message && err.message.startsWith('Video generation failed:')) {
-          console.log(`[VeoAlt] Task failed, skipping retries.`);
+          console.log(`[VideoAlt] Task failed, skipping retries.`);
           break;
         }
 
         if (attempt < maxRetries) {
           const waitTime = attempt * 15000; // Progressive backoff: 15s, 30s, 45s
-          console.log(`[VeoAlt] Waiting ${waitTime/1000}s before retry...`);
+          console.log(`[VideoAlt] Waiting ${waitTime/1000}s before retry...`);
           await new Promise(resolve => setTimeout(resolve, waitTime));
         }
       }
@@ -106,7 +112,7 @@ async function generateVideoAlternative(storyboard, firstImageUrl, config) {
     try {
       await fs.rmdir(tempDir, { recursive: true });
     } catch (cleanupErr) {
-      console.error('[VeoAlt] Cleanup error:', cleanupErr.message);
+      console.error('[VideoAlt] Cleanup error:', cleanupErr.message);
     }
     throw err;
   }
@@ -114,15 +120,13 @@ async function generateVideoAlternative(storyboard, firstImageUrl, config) {
 
 /**
  * Poll the alternative API for task completion
- * This API returns the full task info including video URL when completed
  */
 async function pollAlternativeAPI(config, taskId) {
-  const pollInterval = 5000; // 5 seconds (more frequent as this API updates quickly)
-  const maxPolls = 120; // 5 minutes max (60 * 5s)
+  const pollInterval = 5000; // 5 seconds
+  const maxPolls = 120; // 5 minutes max
 
   for (let i = 0; i < maxPolls; i++) {
     try {
-      // Query task status
       const statusResponse = await axios.get(
         `${config.alt_api_url}/v1/video/query`,
         {
@@ -132,30 +136,24 @@ async function pollAlternativeAPI(config, taskId) {
       );
 
       const taskData = statusResponse.data;
-      console.log(`[VeoAlt] Task ${taskId} - Status: ${taskData.status}, Progress: ${taskData.progress}%`);
+      console.log(`[VideoAlt] Task ${taskId} - Status: ${taskData.status}, Progress: ${taskData.progress}%`);
 
-      // Check status
       if (taskData.status === 'completed') {
-        // Extract video URL from response
-        // The exact field may vary based on actual API response
         return taskData.video_url || taskData.output_url || taskData.result?.url;
       } else if (taskData.status === 'failed' || taskData.status === 'cancelled') {
         const errorMsg = taskData.error || taskData.message || 'Unknown error';
         throw new Error(`Video generation failed: ${errorMsg}`);
       }
 
-      // Still processing (queued or processing), wait before next poll
       await new Promise(resolve => setTimeout(resolve, pollInterval));
 
     } catch (err) {
-      // Check if it's a 404 (task not found) or other critical error
       if (err.response?.status === 404) {
         throw new Error(`Task ${taskId} not found`);
       }
 
-      console.error(`[VeoAlt] Polling error: ${err.message}`);
+      console.error(`[VideoAlt] Polling error: ${err.message}`);
 
-      // For other errors, continue polling unless we're near the timeout
       if (i > maxPolls - 5) {
         throw err;
       }
