@@ -55,7 +55,7 @@ async function generateVideoAlternative(storyboard, firstImageUrl, config) {
       try {
         // Submit video generation request
         const response = await axios.post(
-          `${config.alt_api_url}/v1/video/create`,
+          `${config.alt_api_url}/video/create`,
           requestPayload,
           {
             headers: {
@@ -128,7 +128,7 @@ async function pollAlternativeAPI(config, taskId) {
   for (let i = 0; i < maxPolls; i++) {
     try {
       const statusResponse = await axios.get(
-        `${config.alt_api_url}/v1/video/query`,
+        `${config.alt_api_url}/video/query`,
         {
           params: { id: taskId },
           headers: { 'Authorization': `Bearer ${config.alt_api_key}` }
