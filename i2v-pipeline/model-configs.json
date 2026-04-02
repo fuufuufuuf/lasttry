@@ -1,8 +1,9 @@
 {
   "veo": {
-    "model": "veo-fast",
-    "size": "1080p",
+    "model": "veo_3_1-fast",
+    "size": " 720x1280",
     "aspect_ratio": "9:16",
+    "orientation": "portrait",
     "duration": 8
   },
   "grok": {
