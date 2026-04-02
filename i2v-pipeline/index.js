@@ -5,6 +5,7 @@ const { understandModelImage } = require('./claude');
 const { generateVideoStoryboard } = require('./ttsv');
 const { generateVideo } = require('./veo');
 const { generateVideoAlternative } = require('./veo-alternative');
+const { generateVideoGrok } = require('./grok');
 const cloudinaryUtil = require('./cloudinary');
 
 const CONFIG_PATH = path.join(__dirname, '../config.json');
@@ -76,14 +77,12 @@ async function processRecord(config, token, record) {
     console.log(`[TTSV] Generated ${storyboard.shots.length} shot(s)`);
 
     // Step 3: Generate video using selected provider
-    let videoPath;
-    if (config.video_provider === 'alternative' || config.veo?.use_alternative) {
-      console.log('[VeoAlt] Using alternative video generation service...');
-      videoPath = await generateVideoAlternative(storyboard, selectedImageUrl, config.veo);
-    } else {
-      console.log('[Veo] Using default Veo3.1 service...');
-      videoPath = await generateVideo(storyboard, selectedImageUrl, config.veo);
-    }
+    const modelKey = config.alt_model;
+    const videoConfig = { ...config[modelKey], alt_model: modelKey };
+    console.log(`[VideoAlt] Using model: ${modelKey}`);
+    const videoPath = modelKey === 'grok'
+      ? await generateVideoGrok(storyboard, selectedImageUrl, videoConfig)
+      : await generateVideoAlternative(storyboard, selectedImageUrl, videoConfig);
     console.log('[Video] Video generated successfully');
 
     // Step 4: Upload video to Cloudinary

@@ -3,10 +3,10 @@
 /**
  * I2V Pipeline Test Program
  *
- * Usage: node test-video.js <video_id> [--sora2] [--skip-upload] [--skip-update] [--dry-run]
+ * Usage: node test-video.js <video_id> [--sample] [--skip-upload] [--skip-update] [--dry-run]
  *
  * Options:
- *   --sora2         Use Sora2 provider (default: veo-alternative)
+ *   --sample        Skip Claude/storyboard, use fixed prompt "go around and show the outfit"
  *   --skip-upload   Skip Cloudinary upload
  *   --skip-update   Skip Feishu record update
  *   --dry-run       Only run image analysis + storyboard (no video generation)
@@ -19,7 +19,7 @@ const { getAccessToken, updateRecord } = require('./feishu');
 const { understandModelImage } = require('./claude');
 const { generateVideoStoryboard } = require('./ttsv');
 const { generateVideoAlternative } = require('./veo-alternative');
-const { generateVideoSora2 } = require('./sora2');
+const { generateVideoGrok } = require('./grok');
 const cloudinaryUtil = require('./cloudinary');
 
 const CONFIG_PATH = path.join(__dirname, '../config.json');
@@ -99,19 +99,17 @@ async function main() {
 
   const videoId = positional[0];
   if (!videoId) {
-    console.error('Usage: node test-video.js <video_id> [--sora2] [--skip-upload] [--skip-update] [--dry-run]');
+    console.error('Usage: node test-video.js <video_id> [--skip-upload] [--skip-update] [--dry-run]');
     process.exit(1);
   }
 
-  const useSora2 = flags.includes('--sora2');
+  const sample = flags.includes('--sample');
   const skipUpload = flags.includes('--skip-upload');
   const skipUpdate = flags.includes('--skip-update');
   const dryRun = flags.includes('--dry-run');
-  const provider = useSora2 ? 'sora2' : 'veo-alternative';
 
   console.log(`\n=== I2V Pipeline Test ===`);
   console.log(`Video ID: ${videoId}`);
-  console.log(`Provider: ${provider}`);
   console.log(`Options: ${dryRun ? 'DRY RUN | ' : ''}${skipUpload ? 'skip-upload | ' : ''}${skipUpdate ? 'skip-update' : ''}\n`);
 
   // Load config
@@ -144,21 +142,28 @@ async function main() {
   const selectedImageUrl = generatedImgUrls[0];
   console.log(`[Info] Selected image: ${selectedImageUrl}\n`);
 
-  // Step 2: Claude image analysis
-  console.log('[Step 2] Claude analyzing image...');
-  const imageAnalysis = await understandModelImage(config.anthropic, selectedImageUrl, productDesc);
-  console.log('[Step 2] Image analysis complete:');
-  console.log(JSON.stringify(imageAnalysis, null, 2));
-  console.log();
+  let storyboard;
+  if (sample) {
+    const samplePrompt = 'go around and show the outfit';
+    storyboard = { shots: [{ shotNumber: 1, duration: 10, prompt: samplePrompt }], totalDuration: 10, fullStoryboard: samplePrompt };
+    console.log(`[Step 2-3] Sample mode — using fixed prompt: "${samplePrompt}"\n`);
+  } else {
+    // Step 2: Claude image analysis
+    console.log('[Step 2] Claude analyzing image...');
+    const imageAnalysis = await understandModelImage(config.anthropic, selectedImageUrl, productDesc);
+    console.log('[Step 2] Image analysis complete:');
+    console.log(JSON.stringify(imageAnalysis, null, 2));
+    console.log();
 
-  // Step 3: Generate storyboard
-  console.log('[Step 3] Generating video storyboard (TTSV)...');
-  const storyboard = await generateVideoStoryboard(config.anthropic, imageAnalysis, productDesc);
-  console.log(`[Step 3] Storyboard generated: ${storyboard.shots.length} shots, ${storyboard.totalDuration}s total`);
-  storyboard.shots.forEach(shot => {
-    console.log(`  Shot ${shot.shotNumber} (${shot.duration}s): ${shot.prompt.substring(0, 100)}...`);
-  });
-  console.log(`\n--- Full Storyboard ---\n${storyboard.fullStoryboard}\n--- End Storyboard ---\n`);
+    // Step 3: Generate storyboard
+    console.log('[Step 3] Generating video storyboard (TTSV)...');
+    storyboard = await generateVideoStoryboard(config.anthropic, imageAnalysis, productDesc);
+    console.log(`[Step 3] Storyboard generated: ${storyboard.shots.length} shots, ${storyboard.totalDuration}s total`);
+    storyboard.shots.forEach(shot => {
+      console.log(`  Shot ${shot.shotNumber} (${shot.duration}s): ${shot.prompt.substring(0, 100)}...`);
+    });
+    console.log(`\n--- Full Storyboard ---\n${storyboard.fullStoryboard}\n--- End Storyboard ---\n`);
+  }
 
   if (dryRun) {
     console.log('[Done] Dry run complete. Skipping video generation.');
@@ -166,22 +171,17 @@ async function main() {
   }
 
   // Step 4: Generate video
-  console.log(`[Step 4] Generating video (${provider})...`);
+  console.log(`[Step 4] Generating video (${config.alt_model})...`);
 
-  let videoPath;
-  if (useSora2) {
-    if (!config.sora2?.alt_api_url || !config.sora2?.alt_api_key) {
-      console.error('[Error] Missing sora2.alt_api_url or sora2.alt_api_key in config.json');
-      process.exit(1);
-    }
-    videoPath = await generateVideoSora2(storyboard, selectedImageUrl, config.sora2);
-  } else {
-    if (!config.veo?.alt_api_url || !config.veo?.alt_api_key) {
-      console.error('[Error] Missing veo.alt_api_url or veo.alt_api_key in config.json');
-      process.exit(1);
-    }
-    videoPath = await generateVideoAlternative(storyboard, selectedImageUrl, config.veo);
+  const modelKey = config.alt_model;
+  if (!config[modelKey]?.alt_api_url || !config[modelKey]?.alt_api_key) {
+    console.error(`[Error] Missing ${modelKey}.alt_api_url or ${modelKey}.alt_api_key in config.json`);
+    process.exit(1);
   }
+  const videoConfig = { ...config[modelKey], alt_model: modelKey };
+  const videoPath = modelKey === 'grok'
+    ? await generateVideoGrok(storyboard, selectedImageUrl, videoConfig)
+    : await generateVideoAlternative(storyboard, selectedImageUrl, videoConfig);
   console.log(`[Step 4] Video saved to: ${videoPath}\n`);
 
   // Step 5: Upload to Cloudinary

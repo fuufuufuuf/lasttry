@@ -1,0 +1,15 @@
+{
+  "veo": {
+    "model": "veo-fast",
+    "size": "1080p",
+    "aspect_ratio": "9:16",
+    "duration": 8
+  },
+  "grok": {
+    "model": "grok-video",
+    "size": "720x1280",
+    "aspect_ratio": "9:16",
+    "duration": 10,
+    "quality": "standard"
+  }
+}
