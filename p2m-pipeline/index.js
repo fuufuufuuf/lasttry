@@ -57,7 +57,7 @@ async function processRecord(config, token, record) {
 
   console.log(`[Info] product_desc length: ${productDesc.length}`);
 
-  // Step 1: Claude analyzes images and generates p2m prompts (3 scenes)
+  // Step 1: Claude analyzes images and generates p2m prompt (1 home scene)
   const { scenes } = await analyzeAndGeneratePrompt(
     config.anthropic,
     productDesc,
@@ -65,7 +65,7 @@ async function processRecord(config, token, record) {
   );
   console.log(`[Claude] ${scenes.length} scene prompt(s) ready`);
 
-  // Step 2-4: Gemini generates all scenes in parallel; collect URLs then update Feishu once
+  // Step 2-4: Gemini generates the scene image; collect URL then update Feishu once
   const results = await Promise.allSettled(
     scenes.map(async (scene, i) => {
       console.log(`[Gemini] Generating image for Scene ${i + 1}...`);

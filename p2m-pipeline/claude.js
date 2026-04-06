@@ -17,17 +17,10 @@ async function urlToBase64(url) {
 }
 
 function extractAllScenes(p2mOutput) {
-  const scenes = [];
-  const sceneRegex = /##\s*Scene\s+\d+[^\n]*\n[\s\S]*?(?=##\s*Scene\s+\d+|$)/gi;
-  let match;
-  while ((match = sceneRegex.exec(p2mOutput)) !== null) {
-    const trimmed = match[0].trim();
-    if (trimmed) scenes.push(trimmed);
-  }
-  if (scenes.length === 0) {
-    scenes.push(p2mOutput.trim());
-  }
-  return scenes;
+  // Extract single scene block (## Scene: ...)
+  const match = p2mOutput.match(/##\s*Scene[:\s][^\n]*\n[\s\S]*/i);
+  const scene = match ? match[0].trim() : p2mOutput.trim();
+  return [scene];
 }
 
 async function analyzeAndGeneratePrompt(anthropicConfig, productDesc, imgUrls) {
@@ -45,7 +38,7 @@ async function analyzeAndGeneratePrompt(anthropicConfig, productDesc, imgUrls) {
     ...imageBlocks,
     {
       type: 'text',
-      text: `Product Description:\n${productDesc}\n\nPlease analyze the product images above and apply the P2M skill to generate three photoshoot scenarios with model profile. Focus on Scene 1 as the primary scenario that best showcases the product.`,
+      text: `Product Description:\n${productDesc}\n\nPlease analyze the product images above and apply the P2M skill to generate one home photoshoot scenario with model profile, as defined in the P2M skill.`,
     },
   ];
 
@@ -85,7 +78,7 @@ async function analyzeAndGeneratePrompt(anthropicConfig, productDesc, imgUrls) {
         ...base64Images,
         {
           type: 'text',
-          text: `Product Description:\n${productDesc}\n\nPlease analyze the product images above and apply the P2M skill to generate three photoshoot scenarios with model profile. Focus on Scene 1 as the primary scenario that best showcases the product.`,
+          text: `Product Description:\n${productDesc}\n\nPlease analyze the product images above and apply the P2M skill to generate one home photoshoot scenario with model profile, as defined in the P2M skill.`,
         },
       ];
 
