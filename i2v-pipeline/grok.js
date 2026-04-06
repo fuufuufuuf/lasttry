@@ -1,6 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
-const axios = require('axios');
+const fetch = require('node-fetch');
 const MODEL_CONFIGS = require('./model-configs.json');
 
 /**
@@ -20,16 +20,12 @@ async function generateVideoGrok(storyboard, firstImageUrl, config) {
     console.log(`[Grok] Generating video with model: ${modelConfig.model}`);
     console.log(`[Grok] Prompt: ${fullPrompt}`);
 
-    // Download image and convert to base64 data URI
-    console.log(`[Grok] Downloading reference image...`);
-    const imgResponse = await axios.get(firstImageUrl, { responseType: 'arraybuffer', timeout: 30000 });
-    const mimeType = imgResponse.headers['content-type'] || 'image/jpeg';
-    const b64 = Buffer.from(imgResponse.data).toString('base64');
+    console.log(`[Grok] Using image URL directly: ${firstImageUrl}`);
 
     const requestPayload = {
       model: modelConfig.model,
       prompt: fullPrompt,
-      image_reference: `data:${mimeType};base64,${b64}`,
+      IMG_REF: firstImageUrl,
       size: modelConfig.size,
       seconds: String(modelConfig.duration),
       quality: modelConfig.quality || 'standard',
@@ -43,19 +39,25 @@ async function generateVideoGrok(storyboard, firstImageUrl, config) {
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        const response = await axios.post(
-          `${config.alt_api_url}/v1/videos`,
-          requestPayload,
-          {
-            headers: {
-              'Authorization': `Bearer ${config.alt_api_key}`,
-              'Content-Type': 'application/json'
-            },
-            timeout: 120000
-          }
-        );
+        const postController = new AbortController();
+        const postTimeout = setTimeout(() => postController.abort(), 300000);
+        const response = await fetch(`${config.alt_api_url}/v1/videos`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${config.alt_api_key}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestPayload),
+          signal: postController.signal
+        });
+        clearTimeout(postTimeout);
 
-        const taskData = response.data;
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Grok API error: ${response.status} - ${errorText}`);
+        }
+
+        const taskData = await response.json();
         console.log(`[Grok] /v1/videos response:`, JSON.stringify(taskData, null, 2));
         taskId = taskData.id || taskData.task_id;
         if (!taskId) throw new Error(`No task id in response: ${JSON.stringify(taskData)}`);
@@ -108,15 +110,20 @@ async function pollGrokAPI(config, taskId) {
 
   for (let i = 0; i < maxPolls; i++) {
     try {
-      const statusResponse = await axios.get(
-        `${config.alt_api_url}/v1/videos/${taskId}`,
-        {
-          headers: { 'Authorization': `Bearer ${config.alt_api_key}` },
-          timeout: 30000
-        }
-      );
+      const pollController = new AbortController();
+      const pollTimeout = setTimeout(() => pollController.abort(), 30000);
+      const statusResponse = await fetch(`${config.alt_api_url}/v1/videos/${taskId}`, {
+        headers: { 'Authorization': `Bearer ${config.alt_api_key}` },
+        signal: pollController.signal
+      });
+      clearTimeout(pollTimeout);
 
-      const taskData = statusResponse.data;
+      if (!statusResponse.ok) {
+        if (statusResponse.status === 404) throw new Error(`Task ${taskId} not found`);
+        throw new Error(`Poll error: ${statusResponse.status}`);
+      }
+
+      const taskData = await statusResponse.json();
       const status = String(taskData.status || taskData?.data?.status || '').toLowerCase();
       console.log(`[Grok] Task ${taskId} - Status: ${status}`);
 
@@ -135,8 +142,8 @@ async function pollGrokAPI(config, taskId) {
       await new Promise(resolve => setTimeout(resolve, pollInterval));
 
     } catch (err) {
-      if (err.response?.status === 404) throw new Error(`Task ${taskId} not found`);
       if (err.message && err.message.startsWith('Video generation failed:')) throw err;
+      if (err.message && err.message.includes(`Task ${taskId} not found`)) throw err;
       console.error(`[Grok] Polling error: ${err.message}`);
       if (i > maxPolls - 5) throw err;
     }
@@ -154,16 +161,15 @@ async function downloadVideo(url, filepath, apiKey) {
     headers['Authorization'] = `Bearer ${apiKey}`;
   }
 
-  const response = await axios({
-    method: 'GET',
-    url,
-    responseType: 'stream',
-    headers,
-    timeout: 600000
-  });
+  const dlController = new AbortController();
+  const dlTimeout = setTimeout(() => dlController.abort(), 600000);
+  const response = await fetch(url, { headers, signal: dlController.signal });
+  clearTimeout(dlTimeout);
+
+  if (!response.ok) throw new Error(`Download failed: ${response.status}`);
 
   const writeStream = require('fs').createWriteStream(filepath);
-  response.data.pipe(writeStream);
+  response.body.pipe(writeStream);
 
   return new Promise((resolve, reject) => {
     writeStream.on('finish', resolve);
