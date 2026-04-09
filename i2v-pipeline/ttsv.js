@@ -1,10 +1,10 @@
 const fs = require('fs');
 const path = require('path');
-const fetch = require('node-fetch');
+const { runClaudeCLI, getClaudeCliConfig } = require('./claude');
 
 const SKILL_PATH = path.join(__dirname, '../skills/ttsv/SKILL.md');
 
-async function generateVideoStoryboard(config, imageAnalysis, productDesc) {
+async function generateVideoStoryboard(config, imageAnalysis, productDesc, modelKey) {
   // Load TTSV skill content
   const ttsvSkill = fs.readFileSync(SKILL_PATH, 'utf-8');
 
@@ -12,6 +12,11 @@ async function generateVideoStoryboard(config, imageAnalysis, productDesc) {
   const skillContent = ttsvSkill.split('---').slice(2).join('---').trim();
 
   const systemPrompt = skillContent;
+
+  // Get shot durations from model config
+  const MODEL_CONFIGS = require('./model-configs.json');
+  const shotDurations = (modelKey && MODEL_CONFIGS[modelKey]?.shot_durations) || [1, 5, 2];
+  const totalShotDuration = shotDurations.reduce((a, b) => a + b, 0);
 
   const isMinimalDesc = !productDesc || productDesc.length < 30;
   const productSection = isMinimalDesc
@@ -29,44 +34,21 @@ ${JSON.stringify(imageAnalysis, null, 2)}
 
 ${productSection}
 
-IMPORTANT: The first-frame analysis contains "clothing.highlightAreas" with the key visual areas to showcase. Shot 1 should be a minimal flash establishing shot (1s, no complex action). Shot 2 MUST use intense hand-guided actions (pulling, tugging, stretching fabric) to showcase every highlightArea — hands must be bold, fast, and exaggerated. Shot 3 uses "videoActions.shot3_action" for the closing pose.
+IMPORTANT: The first-frame analysis contains "clothing.highlightAreas" with the key visual areas to showcase. Shot 1 should be a minimal flash establishing shot (${shotDurations[0]}s, no complex action). Shot 2 MUST use intense hand-guided actions (pulling, tugging, stretching fabric) to showcase every highlightArea — hands must be bold, fast, and exaggerated. Shot 3 uses "videoActions.shot3_action" for the closing pose.
 
-Please generate a 3-shot video storyboard following the TTSV format. The video should be 8 seconds total: Shot 1 (1s), Shot 2 (5s), Shot 3 (2s).`;
+Please generate a 3-shot video storyboard following the TTSV format. The video should be ${totalShotDuration} seconds total: Shot 1 (${shotDurations[0]}s), Shot 2 (${shotDurations[1]}s), Shot 3 (${shotDurations[2]}s).`;
 
-  const maxRetries = 3;
+  const cliConfig = getClaudeCliConfig();
+  const maxRetries = cliConfig.max_retries || 3;
   let lastError;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const response = await fetch(config.base_url + '/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${config.api_key}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://github.com/yourusername/i2v-pipeline',
-          'X-Title': 'I2V Pipeline TTSV'
-        },
-        body: JSON.stringify({
-          model: config.model_storyboard || 'anthropic/claude-3.5-sonnet',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userMessage }
-          ],
-          temperature: 0.7,
-          max_tokens: 2000
-        })
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Claude API error: ${response.status} - ${errorText}`);
-      }
-
-      const data = await response.json();
-      const content = data.choices[0].message.content;
+      console.log(`[TTSV] Generating storyboard via Claude CLI (attempt ${attempt}/${maxRetries})...`);
+      const content = await runClaudeCLI(systemPrompt, userMessage);
 
       // Parse the storyboard shots
-      const shots = parseStoryboard(content);
+      const shots = parseStoryboard(content, shotDurations);
 
       if (shots.length === 0) {
         throw new Error('No shots parsed from storyboard');
@@ -103,9 +85,9 @@ Please generate a 3-shot video storyboard following the TTSV format. The video s
   throw new Error(`TTSV storyboard generation failed after ${maxRetries} attempts: ${lastError.message}`);
 }
 
-function parseStoryboard(content) {
+function parseStoryboard(content, shotDurations) {
   const shots = [];
-  const fixedDurations = [1, 5, 2];
+  const fixedDurations = shotDurations || [1, 5, 2];
 
   // Match shot patterns like [Shot 1 — Hook] — 4s or **[Shot 1]** 3s
   const shotRegex = /\*?\*?\[Shot\s+(\d+)[^\]]*\]\*?\*?[^\n]*?(\d+)s[^\n]*\n+Prompt:\s*(.+?)(?=\n\n\*?\*?\[Shot|\n\n```|\n\n---|\n\n##|$)/gs;

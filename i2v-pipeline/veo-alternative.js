@@ -141,7 +141,8 @@ async function pollAlternativeAPI(config, taskId) {
       if (taskData.status === 'completed') {
         return taskData.video_url || taskData.output_url || taskData.result?.url;
       } else if (taskData.status === 'failed' || taskData.status === 'cancelled') {
-        const errorMsg = taskData.error || taskData.message || 'Unknown error';
+        const rawError = taskData.error || taskData.message || 'Unknown error';
+        const errorMsg = typeof rawError === 'object' ? JSON.stringify(rawError, null, 2) : rawError;
         throw new Error(`Video generation failed: ${errorMsg}`);
       }
 
@@ -150,6 +151,11 @@ async function pollAlternativeAPI(config, taskId) {
     } catch (err) {
       if (err.response?.status === 404) {
         throw new Error(`Task ${taskId} not found`);
+      }
+
+      // If the task explicitly failed, stop polling immediately
+      if (err.message && err.message.startsWith('Video generation failed:')) {
+        throw err;
       }
 
       console.error(`[VideoAlt] Polling error: ${err.message}`);

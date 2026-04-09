@@ -73,11 +73,11 @@ async function processRecord(config, token, record) {
 
     // Step 2: Generate video storyboard using TTSV skill
     console.log('[TTSV] Generating video storyboard...');
-    const storyboard = await generateVideoStoryboard(config.anthropic, imageAnalysis, productDesc);
+    const modelKey = config.alt_model;
+    const storyboard = await generateVideoStoryboard(config.anthropic, imageAnalysis, productDesc, modelKey);
     console.log(`[TTSV] Generated ${storyboard.shots.length} shot(s)`);
 
     // Step 3: Generate video using selected provider
-    const modelKey = config.alt_model;
     const videoConfig = { ...config[modelKey], alt_model: modelKey };
     console.log(`[VideoAlt] Using model: ${modelKey}`);
     const videoPath = modelKey === 'grok'

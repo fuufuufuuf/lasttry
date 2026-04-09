@@ -1,4 +1,78 @@
+const { spawn } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 const fetch = require('node-fetch');
+
+const MODEL_CONFIGS_PATH = path.join(__dirname, 'model-configs.json');
+
+function getClaudeCliConfig() {
+  const raw = fs.readFileSync(MODEL_CONFIGS_PATH, 'utf-8');
+  const configs = JSON.parse(raw);
+  return configs.claude_cli || { model: 'sonnet', timeout: 120000, max_retries: 3 };
+}
+
+async function downloadImage(url, destPath) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to download image: ${res.status}`);
+  const buffer = await res.buffer();
+  fs.writeFileSync(destPath, buffer);
+}
+
+function runClaudeCLI(systemPrompt, userPrompt) {
+  const cliConfig = getClaudeCliConfig();
+  
+  // Write system prompt to temp file to avoid arg length issues
+  const tempDir = path.join(__dirname, 'temp');
+  if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+  const sysPromptFile = path.join(tempDir, `sys-prompt-${Date.now()}.txt`);
+  fs.writeFileSync(sysPromptFile, systemPrompt, 'utf-8');
+
+  const args = [
+    '-p',
+    '--output-format', 'text',
+    '--append-system-prompt-file', sysPromptFile,
+    '--model', cliConfig.model
+  ];
+
+  return new Promise((resolve, reject) => {
+    const child = spawn('claude', args, {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true
+    });
+
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout.on('data', (data) => { stdout += data.toString(); });
+    child.stderr.on('data', (data) => { stderr += data.toString(); });
+
+    // Write prompt to stdin then close it
+    child.stdin.write(userPrompt);
+    child.stdin.end();
+
+    const timer = setTimeout(() => {
+      child.kill();
+      reject(new Error(`Claude CLI timed out after ${cliConfig.timeout || 120000}ms`));
+    }, cliConfig.timeout || 120000);
+
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      try { fs.unlinkSync(sysPromptFile); } catch (_) {}
+      
+      if (code !== 0) {
+        reject(new Error(`Claude CLI exited with code ${code}\nstderr: ${stderr}`));
+        return;
+      }
+      resolve(stdout);
+    });
+
+    child.on('error', (err) => {
+      clearTimeout(timer);
+      try { fs.unlinkSync(sysPromptFile); } catch (_) {}
+      reject(new Error(`Claude CLI spawn error: ${err.message}`));
+    });
+  });
+}
 
 async function understandModelImage(config, imageUrl, productDesc) {
   const systemPrompt = `You are an expert fashion videographer analyzing e-commerce model images.
@@ -44,80 +118,59 @@ Format your response as structured JSON with these exact keys:
     "shot2_handActions": ["2-3 specific hand interactions suited to this product (e.g. running fingers along embroidery, pulling stretchy waistband, flipping collar, sliding zipper)"],
     "shot3_action": "recommended closing pose/action that best shows the complete look of this specific product"
   }
-}`;
+}
+
+IMPORTANT: Return ONLY the JSON object, no markdown fencing, no extra text.`;
 
   const userMessage = `Product Description: ${productDesc}
 
 Please analyze this model image and provide the structured analysis.`;
 
-  const messages = [
-    {
-      role: 'user',
-      content: [
-        { type: 'text', text: userMessage },
-        {
-          type: 'image_url',
-          image_url: { url: imageUrl }
-        }
-      ]
-    }
-  ];
+  // Download image to temp file
+  const tempDir = path.join(__dirname, 'temp');
+  if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+  const tempImage = path.join(tempDir, `claude-img-${Date.now()}.jpg`);
 
-  const maxRetries = 3;
+  const cliConfig = getClaudeCliConfig();
+  const maxRetries = cliConfig.max_retries || 3;
   let lastError;
 
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const response = await fetch(config.base_url + '/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${config.api_key}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://github.com/yourusername/i2v-pipeline',
-          'X-Title': 'I2V Pipeline'
-        },
-        body: JSON.stringify({
-          model: config.model || 'anthropic/claude-3.5-sonnet',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            ...messages
-          ],
-          temperature: 0.3,
-          max_tokens: 1500
-        })
-      });
+  try {
+    console.log('[Claude CLI] Downloading image...');
+    await downloadImage(imageUrl, tempImage);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Claude API error: ${response.status} - ${errorText}`);
-      }
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`[Claude CLI] Analyzing image (attempt ${attempt}/${maxRetries})...`);
+        const fullPrompt = `Analyze the image file at ${tempImage}\n\n${userMessage}`;
+        const content = await runClaudeCLI(systemPrompt, fullPrompt);
 
-      const data = await response.json();
-      const content = data.choices[0].message.content;
+        // Parse JSON response
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const analysis = JSON.parse(jsonMatch[0]);
+          return analysis;
+        } else {
+          throw new Error('Claude CLI did not return valid JSON');
+        }
 
-      // Parse JSON response
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const analysis = JSON.parse(jsonMatch[0]);
-        return analysis;
-      } else {
-        throw new Error('Claude did not return valid JSON');
-      }
+      } catch (err) {
+        lastError = err;
+        console.error(`[Claude CLI] Attempt ${attempt}/${maxRetries} failed:`, err.message);
 
-    } catch (err) {
-      lastError = err;
-      console.error(`[Claude] Attempt ${attempt}/${maxRetries} failed:`, err.message);
-
-      if (attempt < maxRetries) {
-        // Exponential backoff
-        const waitTime = Math.pow(2, attempt - 1) * 1000;
-        console.log(`[Claude] Waiting ${waitTime}ms before retry...`);
-        await new Promise(resolve => setTimeout(resolve, waitTime));
+        if (attempt < maxRetries) {
+          const waitTime = Math.pow(2, attempt - 1) * 1000;
+          console.log(`[Claude CLI] Waiting ${waitTime}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
       }
     }
-  }
 
-  throw new Error(`Claude image analysis failed after ${maxRetries} attempts: ${lastError.message}`);
+    throw new Error(`Claude CLI image analysis failed after ${maxRetries} attempts: ${lastError.message}`);
+  } finally {
+    // Clean up temp image
+    try { fs.unlinkSync(tempImage); } catch (_) {}
+  }
 }
 
-module.exports = { understandModelImage };
+module.exports = { understandModelImage, runClaudeCLI, getClaudeCliConfig };

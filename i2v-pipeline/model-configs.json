@@ -1,6 +1,19 @@
 {
+  "claude_cli": {
+    "model": "sonnet",
+    "timeout": 120000,
+    "max_retries": 3
+  },
   "veo": {
-    "model": "veo_3_1-fast",
+    "model": "grok-video-3",
+    "size": " 1080P",
+    "aspect_ratio": "9:16",
+    "orientation": "portrait",
+    "duration": 15,
+    "shot_durations": [1, 5, 2]
+  },
+    "veo_original": {
+    "model": "veo",
     "size": " 720x1280",
     "aspect_ratio": "9:16",
     "orientation": "portrait",
@@ -11,6 +24,7 @@
     "size": "720x1280",
     "aspect_ratio": "9:16",
     "duration": 10,
-    "quality": "standard"
+    "quality": "standard",
+    "shot_durations": [2, 6, 2]
   }
 }
