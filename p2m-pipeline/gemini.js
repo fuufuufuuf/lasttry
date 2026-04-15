@@ -1,7 +1,9 @@
 const { GoogleGenAI } = require('@google/genai');
 const fetch = require('node-fetch');
+const { P2M_GEMINI_PROMPT } = require('./p2m-prompt');
 
 const MODEL_ID = 'gemini-3.1-flash-image-preview';
+const OUTPUT_ASPECT_RATIO = '9:16';
 
 async function urlToBase64(url) {
   const res = await fetch(url);
@@ -35,55 +37,60 @@ function isPortrait916(width, height) {
   return Math.abs(ratio - 0.5625) < 0.06;
 }
 
-async function generateModelImage(apiKey, prompt, refImageUrls) {
+// Generate a new p2m image from a model scene reference + a product reference.
+// Image 1 = model scene photo (identity, body, pose, framing authority)
+// Image 2 = product photo (garment color + construction authority)
+// Output is always 9:16.
+async function generateModelImage(apiKey, modelImgUrl, productImgUrl) {
+  if (!modelImgUrl) throw new Error('generateModelImage: modelImgUrl is required');
+  if (!productImgUrl) throw new Error('generateModelImage: productImgUrl is required');
+
   const ai = new GoogleGenAI({ apiKey });
 
-  // Download reference images
-  const imageParts = [];
-  for (const url of refImageUrls.slice(0, 2)) {
-    const { base64, mimeType } = await urlToBase64(url);
-    imageParts.push({ inlineData: { data: base64, mimeType } });
-  }
+  // Download both references
+  const [model, product] = await Promise.all([
+    urlToBase64(modelImgUrl),
+    urlToBase64(productImgUrl),
+  ]);
 
+  // Order matters: Image 1 = model (first), Image 2 = product (second)
   const contents = [
-    ...imageParts,
-    {
-      text: `You are a professional fashion e-commerce photographer. Based on these product reference images and the following photoshoot scenario, generate a high-quality lifestyle fashion photo with a Western model standing and wearing this product.\n\n${prompt}\n\nIMPORTANT: The model MUST be standing. Western/European appearance. Natural lifestyle setting as described. Product must be clearly visible and remain the focal point.`,
-    },
+    { inlineData: { data: model.base64,   mimeType: model.mimeType } },
+    { inlineData: { data: product.base64, mimeType: product.mimeType } },
+    { text: P2M_GEMINI_PROMPT },
   ];
 
   const maxRetries = 3;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    console.log(`[Gemini] Generating image with model: ${MODEL_ID} (attempt ${attempt}/${maxRetries})`);
+    console.log(`[Gemini] ${MODEL_ID} attempt ${attempt}/${maxRetries}`);
     const response = await ai.models.generateContent({
       model: MODEL_ID,
       contents,
       config: {
         responseModalities: ['TEXT', 'IMAGE'],
         imageConfig: {
-          aspectRatio: '9:16',
+          aspectRatio: OUTPUT_ASPECT_RATIO,
           imageSize: '1K',
         },
       },
     });
 
-    // Extract image from response parts
-    for (const part of response.candidates[0].content.parts) {
-      if (part.inlineData) {
-        const dims = getImageDimensions(part.inlineData.data);
-        if (dims) {
-          console.log(`[Gemini] Image dimensions: ${dims.width}x${dims.height}`);
-          if (!isPortrait916(dims.width, dims.height)) {
-            console.log(`[Gemini] Aspect ratio is not 9:16, ${attempt < maxRetries ? 'retrying...' : 'giving up'}`);
-            if (attempt < maxRetries) break;
-          }
+    const parts = response?.candidates?.[0]?.content?.parts || [];
+    for (const part of parts) {
+      if (!part.inlineData) continue;
+      const dims = getImageDimensions(part.inlineData.data);
+      if (dims) {
+        console.log(`[Gemini] Output ${dims.width}x${dims.height}`);
+        if (!isPortrait916(dims.width, dims.height)) {
+          console.log(`[Gemini] Not 9:16, ${attempt < maxRetries ? 'retrying...' : 'giving up'}`);
+          if (attempt < maxRetries) break;
         }
-        console.log('[Gemini] Image generated successfully');
-        return {
-          base64: part.inlineData.data,
-          mimeType: part.inlineData.mimeType || 'image/png',
-        };
       }
+      console.log('[Gemini] Image generated');
+      return {
+        base64: part.inlineData.data,
+        mimeType: part.inlineData.mimeType || 'image/png',
+      };
     }
   }
 

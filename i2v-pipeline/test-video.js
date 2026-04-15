@@ -18,7 +18,7 @@ const fetch = require('node-fetch');
 const { getAccessToken, updateRecord } = require('./feishu');
 const { understandModelImage } = require('./claude');
 const { generateVideoStoryboard } = require('./ttsv');
-const { generateVideoAlternative } = require('./veo-alternative');
+const { generateApiVideo } = require('./api_video_generation');
 const { generateVideoGrok } = require('./grok');
 const cloudinaryUtil = require('./cloudinary');
 
@@ -181,7 +181,7 @@ async function main() {
   const videoConfig = { ...config[modelKey], alt_model: modelKey };
   const videoPath = modelKey === 'grok'
     ? await generateVideoGrok(storyboard, selectedImageUrl, videoConfig)
-    : await generateVideoAlternative(storyboard, selectedImageUrl, videoConfig);
+    : await generateApiVideo(storyboard, selectedImageUrl, videoConfig);
   console.log(`[Step 4] Video saved to: ${videoPath}\n`);
 
   // Step 5: Upload to Cloudinary

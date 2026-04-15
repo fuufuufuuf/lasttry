@@ -4,16 +4,19 @@ const axios = require('axios');
 const MODEL_CONFIGS = require('./model-configs.json');
 
 /**
- * Alternative video API implementation supporting multiple models.
- * Model-specific parameters (size, duration, etc.) are read from model-configs.json.
+ * Unified video generation via the ai666-style API (POST /video/create + poll /video/query).
+ * Used by any model whose entry lives in model-configs.json and whose config section
+ * provides alt_api_url + alt_api_key. Currently: veo_ai666, grok_ai666.
+ *
+ * Model-specific parameters (size, duration, etc.) are read from model-configs.json by key.
  */
-async function generateVideoAlternative(storyboard, firstImageUrl, config) {
+async function generateApiVideo(storyboard, firstImageUrl, config) {
   // Create temp directory for this video generation
   const tempDir = path.join(__dirname, 'temp', Date.now().toString());
   await fs.mkdir(tempDir, { recursive: true });
 
   try {
-    const modelKey = config?.alt_model || 'veo';
+    const modelKey = config?.alt_model || 'veo_ai666';
     const modelConfig = MODEL_CONFIGS[modelKey];
     if (!modelConfig) {
       throw new Error(`Unknown model "${modelKey}". Available models: ${Object.keys(MODEL_CONFIGS).join(', ')}`);
@@ -22,8 +25,8 @@ async function generateVideoAlternative(storyboard, firstImageUrl, config) {
     const fullPrompt = storyboard.fullStoryboard;
     const isLandscape = config?.orientation === 'landscape';
 
-    console.log(`[VideoAlt] Generating video with model: ${modelConfig.model}`);
-    console.log(`[VideoAlt] Prompt: ${fullPrompt}`);
+    console.log(`[ApiVideo] Generating video with model: ${modelConfig.model}`);
+    console.log(`[ApiVideo] Prompt: ${fullPrompt}`);
 
     // Build request payload from model config
     const requestPayload = {
@@ -45,7 +48,7 @@ async function generateVideoAlternative(storyboard, firstImageUrl, config) {
       requestPayload.enable_upsample = true;
     }
 
-    console.log('[VideoAlt] Submitting video generation request...');
+    console.log('[ApiVideo] Submitting video generation request...');
 
     const maxRetries = 3;
     let lastError;
@@ -67,38 +70,38 @@ async function generateVideoAlternative(storyboard, firstImageUrl, config) {
         );
 
         const taskData = response.data;
-        console.log(`[VideoAlt] Task created: ${taskData.id} (Status: ${taskData.status})`);
+        console.log(`[ApiVideo] Task created: ${taskData.id} (Status: ${taskData.status})`);
 
         // Poll for completion
-        videoUrl = await pollAlternativeAPI(config, taskData.id);
+        videoUrl = await pollApiVideo(config, taskData.id);
 
         if (!videoUrl) {
           throw new Error('Video generation completed but no URL returned');
         }
 
-        console.log(`[VideoAlt] Video generated successfully`);
+        console.log(`[ApiVideo] Video generated successfully`);
         break;
 
       } catch (err) {
         lastError = err;
-        console.error(`[VideoAlt] Attempt ${attempt}/${maxRetries} failed:`, err.message);
+        console.error(`[ApiVideo] Attempt ${attempt}/${maxRetries} failed:`, err.message);
 
         // If the task explicitly failed, don't retry — bail out immediately
         if (err.message && err.message.startsWith('Video generation failed:')) {
-          console.log(`[VideoAlt] Task failed, skipping retries.`);
+          console.log(`[ApiVideo] Task failed, skipping retries.`);
           break;
         }
 
         if (attempt < maxRetries) {
           const waitTime = attempt * 15000; // Progressive backoff: 15s, 30s, 45s
-          console.log(`[VideoAlt] Waiting ${waitTime/1000}s before retry...`);
+          console.log(`[ApiVideo] Waiting ${waitTime/1000}s before retry...`);
           await new Promise(resolve => setTimeout(resolve, waitTime));
         }
       }
     }
 
     if (!videoUrl) {
-      throw new Error(`Alternative video generation failed after ${maxRetries} attempts: ${lastError.message}`);
+      throw new Error(`API video generation failed after ${maxRetries} attempts: ${lastError.message}`);
     }
 
     // Download the generated video
@@ -112,16 +115,16 @@ async function generateVideoAlternative(storyboard, firstImageUrl, config) {
     try {
       await fs.rmdir(tempDir, { recursive: true });
     } catch (cleanupErr) {
-      console.error('[VideoAlt] Cleanup error:', cleanupErr.message);
+      console.error('[ApiVideo] Cleanup error:', cleanupErr.message);
     }
     throw err;
   }
 }
 
 /**
- * Poll the alternative API for task completion
+ * Poll the API for task completion
  */
-async function pollAlternativeAPI(config, taskId) {
+async function pollApiVideo(config, taskId) {
   const pollInterval = 5000; // 5 seconds
   const maxPolls = 120; // 5 minutes max
 
@@ -136,7 +139,7 @@ async function pollAlternativeAPI(config, taskId) {
       );
 
       const taskData = statusResponse.data;
-      console.log(`[VideoAlt] Task ${taskId} - Status: ${taskData.status}, Progress: ${taskData.progress}%`);
+      console.log(`[ApiVideo] Task ${taskId} - Status: ${taskData.status}, Progress: ${taskData.progress}%`);
 
       if (taskData.status === 'completed') {
         return taskData.video_url || taskData.output_url || taskData.result?.url;
@@ -158,7 +161,7 @@ async function pollAlternativeAPI(config, taskId) {
         throw err;
       }
 
-      console.error(`[VideoAlt] Polling error: ${err.message}`);
+      console.error(`[ApiVideo] Polling error: ${err.message}`);
 
       if (i > maxPolls - 5) {
         throw err;
@@ -188,4 +191,4 @@ async function downloadVideo(url, filepath) {
   });
 }
 
-module.exports = { generateVideoAlternative };
+module.exports = { generateApiVideo };

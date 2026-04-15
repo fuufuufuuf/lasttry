@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 const { getAccessToken } = require('./feishu');
-const { analyzeAndGeneratePrompt } = require('./claude');
 const { generateModelImage } = require('./gemini');
 const cloudinaryUtil = require('./cloudinary');
 const fetch = require('node-fetch');
@@ -29,6 +28,29 @@ function extractTextValue(field) {
     return field.map(item => (typeof item === 'object' ? item.text || '' : item)).join('');
   }
   return String(field);
+}
+
+// Pull the first usable URL from a Feishu field. Handles attachment arrays,
+// text arrays, and plain string fields.
+function extractFirstImageUrl(field) {
+  if (!field) return null;
+  if (Array.isArray(field)) {
+    for (const item of field) {
+      if (!item) continue;
+      if (typeof item === 'string' && item.startsWith('http')) return item;
+      if (typeof item === 'object') {
+        const direct = item.url || item.tmp_url;
+        if (direct) return direct;
+        if (item.text && typeof item.text === 'string') {
+          const urls = parseImageUrls(item.text);
+          if (urls.length > 0) return urls[0];
+        }
+      }
+    }
+    return null;
+  }
+  const urls = parseImageUrls(extractTextValue(field));
+  return urls[0] || null;
 }
 
 async function queryByVid(token, appToken, tableId, vid) {
@@ -72,40 +94,30 @@ async function main() {
   console.log('[Feishu] Access token obtained');
 
   const record = await queryByVid(token, config.bitable.app_token, config.bitable.table_id, vid);
-  const fields = record.fields;
   console.log(`[Feishu] Found record: ${record.record_id}`);
+  const fields = record.fields;
 
-  const productDesc = extractTextValue(fields.product_desc) || extractTextValue(fields.product_title);
-  const imgUrls = parseImageUrls(extractTextValue(fields.product_source_imgs));
+  const modelImgUrl = extractFirstImageUrl(fields.video_cover);
+  if (!modelImgUrl) {
+    console.error('[Error] No video_cover on this record');
+    process.exit(1);
+  }
 
-  if (!productDesc) { console.error('[Error] No product_desc'); process.exit(1); }
-  if (imgUrls.length === 0) { console.error('[Error] No product_source_imgs'); process.exit(1); }
+  const productImgUrl = extractFirstImageUrl(fields.product_source_imgs);
+  if (!productImgUrl) {
+    console.error('[Error] No product_source_imgs on this record');
+    process.exit(1);
+  }
 
-  console.log(`[Info] product_desc length: ${productDesc.length}, images: ${imgUrls.length}`);
+  console.log(`[Info] model image (video_cover): ${modelImgUrl}`);
+  console.log(`[Info] product image: ${productImgUrl}`);
 
-  // Step 1: Claude generates scene prompts
-  const { scenes } = await analyzeAndGeneratePrompt(config.anthropic, productDesc, imgUrls);
-  console.log(`[Claude] ${scenes.length} scene(s) ready`);
+  // Single-step: Gemini takes the two reference images directly and applies the p2m prompt.
+  const { base64, mimeType } = await generateModelImage(config.gemini.api_key, modelImgUrl, productImgUrl);
+  const url = await cloudinaryUtil.uploadBase64(base64, mimeType);
 
-  // Step 2: Gemini generates images + upload to Cloudinary
-  const results = await Promise.allSettled(
-    scenes.map(async (scene, i) => {
-      console.log(`[Gemini] Generating Scene ${i + 1}...`);
-      const { base64, mimeType } = await generateModelImage(config.gemini.api_key, scene, imgUrls);
-      const url = await cloudinaryUtil.uploadBase64(base64, mimeType);
-      console.log(`[Scene ${i + 1}] ${url}`);
-      return url;
-    })
-  );
-
-  console.log('\n=== Results ===');
-  results.forEach((r, i) => {
-    if (r.status === 'fulfilled') {
-      console.log(`Scene ${i + 1}: ${r.value}`);
-    } else {
-      console.error(`Scene ${i + 1}: FAILED - ${r.reason?.message || r.reason}`);
-    }
-  });
+  console.log('\n=== Result ===');
+  console.log(url);
 }
 
 main().catch(err => {

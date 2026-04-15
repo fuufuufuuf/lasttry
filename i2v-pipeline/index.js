@@ -4,7 +4,7 @@ const { getAccessToken, queryVideoRecords, updateRecord } = require('./feishu');
 const { understandModelImage } = require('./claude');
 const { generateVideoStoryboard } = require('./ttsv');
 const { generateVideo } = require('./veo');
-const { generateVideoAlternative } = require('./veo-alternative');
+const { generateApiVideo } = require('./api_video_generation');
 const { generateVideoGrok } = require('./grok');
 const cloudinaryUtil = require('./cloudinary');
 
@@ -79,10 +79,10 @@ async function processRecord(config, token, record) {
 
     // Step 3: Generate video using selected provider
     const videoConfig = { ...config[modelKey], alt_model: modelKey };
-    console.log(`[VideoAlt] Using model: ${modelKey}`);
+    console.log(`[ApiVideo] Using model: ${modelKey}`);
     const videoPath = modelKey === 'grok'
       ? await generateVideoGrok(storyboard, selectedImageUrl, videoConfig)
-      : await generateVideoAlternative(storyboard, selectedImageUrl, videoConfig);
+      : await generateApiVideo(storyboard, selectedImageUrl, videoConfig);
     console.log('[Video] Video generated successfully');
 
     // Step 4: Upload video to Cloudinary

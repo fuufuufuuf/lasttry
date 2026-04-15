@@ -1,20 +1,17 @@
 const fs = require('fs');
 const path = require('path');
 const { getAccessToken, queryRecords, updateRecord } = require('./feishu');
-const { analyzeAndGeneratePrompt } = require('./claude');
 const { generateModelImage } = require('./gemini');
 const cloudinaryUtil = require('./cloudinary');
 
 const CONFIG_PATH = path.join(__dirname, '../config.json');
 
 function loadConfig() {
-  const raw = fs.readFileSync(CONFIG_PATH, 'utf-8');
-  return JSON.parse(raw);
+  return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
 }
 
 function parseImageUrls(rawValue) {
   if (!rawValue) return [];
-  // rawValue may be a JSON array string or newline/comma separated URLs
   try {
     const parsed = JSON.parse(rawValue);
     if (Array.isArray(parsed)) return parsed.filter(Boolean);
@@ -34,93 +31,76 @@ function extractTextValue(field) {
   return String(field);
 }
 
+// Pick the model scene image from a Feishu record. Accepts a few likely field
+// names so the user doesn't have to rename anything in the bitable.
+// Pull the first usable URL from a Feishu field. Handles three shapes:
+//  1. Attachment array: [{ url, tmp_url, file_token, ... }, ...]
+//  2. Text array: [{ text: 'https://...' }, ...]
+//  3. Plain string with one or more URLs
+function extractFirstImageUrl(field) {
+  if (!field) return null;
+  if (Array.isArray(field)) {
+    for (const item of field) {
+      if (!item) continue;
+      if (typeof item === 'string' && item.startsWith('http')) return item;
+      if (typeof item === 'object') {
+        const direct = item.url || item.tmp_url;
+        if (direct) return direct;
+        if (item.text && typeof item.text === 'string') {
+          const urls = parseImageUrls(item.text);
+          if (urls.length > 0) return urls[0];
+        }
+      }
+    }
+    return null;
+  }
+  const urls = parseImageUrls(extractTextValue(field));
+  return urls[0] || null;
+}
+
 async function processRecord(config, token, record) {
   const fields = record.fields;
   const recordId = record.record_id;
   const handle = extractTextValue(fields.handle);
-
-  const videoId = extractTextValue(fields.video_id);
   console.log(`\n--- Processing record: ${handle} (${recordId}) ---`);
 
-  const productDesc = extractTextValue(fields.product_desc) || extractTextValue(fields.product_title);
-  const sourceImgsRaw = extractTextValue(fields.product_source_imgs);
-  const imgUrls = parseImageUrls(sourceImgsRaw);
-
-  if (!productDesc) {
-    console.log('[Skip] No product_desc or prod_title');
+  const modelSceneUrl = extractFirstImageUrl(fields.video_cover);
+  if (!modelSceneUrl) {
+    console.log('[Skip] No video_cover');
     return;
   }
-  if (imgUrls.length === 0) {
+
+  const productImgUrl = extractFirstImageUrl(fields.product_source_imgs);
+  if (!productImgUrl) {
     console.log('[Skip] No product_source_imgs');
     return;
   }
+  console.log(`[Info] model image: ${modelSceneUrl}`);
+  console.log(`[Info] product image: ${productImgUrl}`);
 
-  console.log(`[Info] product_desc length: ${productDesc.length}`);
+  // Single-step Gemini call: two reference images + the p2m Nano Banana prompt.
+  const { base64, mimeType } = await generateModelImage(config.gemini.api_key, modelSceneUrl, productImgUrl);
+  const url = await cloudinaryUtil.uploadBase64(base64, mimeType);
+  console.log(`[Done] ${url}`);
 
-  // Step 1: Claude analyzes images and generates p2m prompt (1 home scene)
-  const { scenes } = await analyzeAndGeneratePrompt(
-    config.anthropic,
-    productDesc,
-    imgUrls
-  );
-  console.log(`[Claude] ${scenes.length} scene prompt(s) ready`);
-
-  // Step 2-4: Gemini generates the scene image; collect URL then update Feishu once
-  const results = await Promise.allSettled(
-    scenes.map(async (scene, i) => {
-      console.log(`[Gemini] Generating image for Scene ${i + 1}...`);
-      const { base64, mimeType } = await generateModelImage(config.gemini.api_key, scene, imgUrls);
-      const url = await cloudinaryUtil.uploadBase64(base64, mimeType);
-      console.log(`[Scene ${i + 1}] URL: ${url}`);
-      return url;
-    })
-  );
-
-  const collectedUrls = [];
-  results.forEach((r, i) => {
-    if (r.status === 'fulfilled') {
-      if (r.value) {
-        collectedUrls.push(r.value);
-      } else {
-        console.error(`[Scene ${i + 1}] URL is undefined`);
-      }
-    } else {
-      console.error(`[Scene ${i + 1}] Failed: ${r.reason?.message || r.reason}`);
-    }
+  await updateRecord(token, config.bitable.app_token, config.bitable.table_id, recordId, {
+    generated_img_url: url,
   });
-
-  if (collectedUrls.length > 0) {
-    await updateRecord(token, config.bitable.app_token, config.bitable.table_id, recordId, {
-      generated_img_url: collectedUrls.join('\n'),
-    });
-    console.log(`[Done] Feishu updated with ${collectedUrls.length}/${scenes.length} image(s)`);
-  } else {
-    throw new Error('All image generation failed');
-  }
-
-  console.log(`[Done] Record ${recordId} complete with ${collectedUrls.length} image(s)`);
+  console.log(`[Done] Record ${recordId} updated`);
 }
 
 async function main() {
   const config = loadConfig();
 
-  // Validate required config keys
-  const required = ['anthropic.api_key', 'gemini.api_key'];
-  for (const key of required) {
-    const [section, field] = key.split('.');
-    if (!config[section] || !config[section][field]) {
-      throw new Error(`Missing config: ${key} — please add it to feishu_config.json`);
-    }
+  if (!config.gemini?.api_key) {
+    throw new Error('Missing config: gemini.api_key');
   }
 
-  // Init Cloudinary
   cloudinaryUtil.init(config.cloudinary);
 
-  // Get Feishu token
   const token = await getAccessToken(config.feishu.app_id, config.feishu.app_secret);
   console.log('[Feishu] Access token obtained');
 
-  // Query records where 是否生成视频 = 是
   const records = await queryRecords(token, config.bitable.app_token, config.bitable.table_id);
   console.log(`[Feishu] Found ${records.length} records to process`);
 

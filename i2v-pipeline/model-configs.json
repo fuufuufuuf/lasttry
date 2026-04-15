@@ -4,20 +4,21 @@
     "timeout": 120000,
     "max_retries": 3
   },
-  "veo": {
+  "grok_ai666": {
     "model": "grok-video-3",
-    "size": " 1080P",
+    "size": "1080P",
     "aspect_ratio": "9:16",
     "orientation": "portrait",
     "duration": 15,
     "shot_durations": [1, 5, 2]
   },
-    "veo_original": {
+  "veo_ai666": {
     "model": "veo",
-    "size": " 720x1280",
+    "size": "720x1280",
     "aspect_ratio": "9:16",
     "orientation": "portrait",
-    "duration": 8
+    "duration": 8,
+    "shot_durations": [1, 5, 2]
   },
   "grok": {
     "model": "grok-video",
