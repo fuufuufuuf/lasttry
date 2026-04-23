@@ -4,7 +4,7 @@ const { runClaudeCLI, getClaudeCliConfig } = require('./claude');
 
 const SKILL_PATH = path.join(__dirname, '../skills/ttsv/SKILL.md');
 
-async function generateVideoStoryboard(config, imageAnalysis, productDesc, modelKey) {
+async function generateVideoStoryboard(config, productDesc, modelKey) {
   // Load TTSV skill content
   const ttsvSkill = fs.readFileSync(SKILL_PATH, 'utf-8');
 
@@ -15,28 +15,15 @@ async function generateVideoStoryboard(config, imageAnalysis, productDesc, model
 
   // Get shot durations from model config
   const MODEL_CONFIGS = require('./model-configs.json');
-  const shotDurations = (modelKey && MODEL_CONFIGS[modelKey]?.shot_durations) || [1, 5, 2];
+  const shotDurations = (modelKey && MODEL_CONFIGS[modelKey]?.shot_durations) || [4, 4];
   const totalShotDuration = shotDurations.reduce((a, b) => a + b, 0);
 
-  const isMinimalDesc = !productDesc || productDesc.length < 30;
-  const productSection = isMinimalDesc
-    ? `Product info (title only, limited detail available):
-${productDesc || 'N/A'}
+  const shotList = shotDurations.map((d, i) => `Shot ${i + 1} = ${d}s`).join(', ');
 
-NOTE: Product description is minimal. Rely heavily on the image analysis (especially "clothing" and "videoActions" fields) to determine product type, features, and appropriate showcase actions.`
-    : `Product description:
-${productDesc}`;
+  const userMessage = `Product description:
+${productDesc}
 
-  const userMessage = `I need to create a video storyboard for a fashion product.
-
-First-frame analysis:
-${JSON.stringify(imageAnalysis, null, 2)}
-
-${productSection}
-
-IMPORTANT: The first-frame analysis contains "clothing.highlightAreas" with the key visual areas to showcase. Shot 1 should be a minimal flash establishing shot (${shotDurations[0]}s, no complex action). Shot 2 MUST use intense hand-guided actions (pulling, tugging, stretching fabric) to showcase every highlightArea — hands must be bold, fast, and exaggerated. Shot 3 uses "videoActions.shot3_action" for the closing pose.
-
-Please generate a 3-shot video storyboard following the TTSV format. The video should be ${totalShotDuration} seconds total: Shot 1 (${shotDurations[0]}s), Shot 2 (${shotDurations[1]}s), Shot 3 (${shotDurations[2]}s).`;
+Generate the storyboard per the skill. Per-shot durations: ${shotList}. Total: ${totalShotDuration}s.`;
 
   const cliConfig = getClaudeCliConfig();
   const maxRetries = cliConfig.max_retries || 3;
@@ -45,7 +32,15 @@ Please generate a 3-shot video storyboard following the TTSV format. The video s
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(`[TTSV] Generating storyboard via Claude CLI (attempt ${attempt}/${maxRetries})...`);
-      const content = await runClaudeCLI(systemPrompt, userMessage);
+      const rawContent = await runClaudeCLI(systemPrompt, userMessage);
+
+      // Defensive double-check: strip anything that isn't a [Shot N] + Prompt block.
+      // Claude occasionally leaks analysis/headings/commentary despite the skill's output rules.
+      const content = filterStoryboard(rawContent);
+      const stripped = rawContent.trim().length - content.length;
+      if (stripped > 0) {
+        console.log(`[TTSV] Filtered ${stripped} chars of non-storyboard content`);
+      }
 
       // Parse the storyboard shots
       const shots = parseStoryboard(content, shotDurations);
@@ -54,15 +49,12 @@ Please generate a 3-shot video storyboard following the TTSV format. The video s
         throw new Error('No shots parsed from storyboard');
       }
 
-      // Update durations in fullStoryboard text
+      // Safety net: align each shot header's duration with the config value in case the model drifted
       let updatedContent = content;
-      const totalDuration = shots.reduce((sum, shot) => sum + shot.duration, 0);
       shots.forEach(shot => {
         const regex = new RegExp(`(\\[Shot ${shot.shotNumber}\\][^\\n]*?)\\d+s`, 'g');
         updatedContent = updatedContent.replace(regex, `$1${shot.duration}s`);
       });
-      updatedContent = updatedContent.replace(/Total:\s*\d+s/g, `Total: ${totalDuration}s`);
-      updatedContent = updatedContent.replace(/\*\*Total Duration\*\*:\s*\d+\s*seconds?/g, `**Total Duration**: ${totalDuration}s`);
 
       return {
         fullStoryboard: updatedContent,
@@ -85,11 +77,21 @@ Please generate a 3-shot video storyboard following the TTSV format. The video s
   throw new Error(`TTSV storyboard generation failed after ${maxRetries} attempts: ${lastError.message}`);
 }
 
+function filterStoryboard(content) {
+  // Keep only `[Shot N ...] — Ns` headers paired with their `Prompt: ...` content.
+  // Prompt content may span multiple lines (soft wraps) — absorb continuations until
+  // a boundary: blank line, next shot header, code fence, horizontal rule, markdown
+  // heading, bold heading, or list item. Everything outside these blocks is dropped.
+  // `m` flag is required so `$` matches end-of-line, not just end-of-string.
+  const shotBlockRegex = /\*?\*?\[Shot\s+\d+[^\]]*\]\*?\*?[^\n]*\n+Prompt:[^\n]*(?:\n(?![ \t]*$|[ \t]*(?:```|---|#|\*\*|[-*+][ \t])|\s*\*?\*?\[Shot\s+\d+)[^\n]*)*/gm;
+  const blocks = content.match(shotBlockRegex) || [];
+  return blocks.map(b => b.trimEnd()).join('\n\n');
+}
+
 function parseStoryboard(content, shotDurations) {
   const shots = [];
-  const fixedDurations = shotDurations || [1, 5, 2];
 
-  // Match shot patterns like [Shot 1 — Hook] — 4s or **[Shot 1]** 3s
+  // Match shot patterns like [Shot 1 — Detail Sweep Part 1] — 3s or **[Shot 2 — Detail Sweep Part 2]** 3s
   const shotRegex = /\*?\*?\[Shot\s+(\d+)[^\]]*\]\*?\*?[^\n]*?(\d+)s[^\n]*\n+Prompt:\s*(.+?)(?=\n\n\*?\*?\[Shot|\n\n```|\n\n---|\n\n##|$)/gs;
 
   let match;
@@ -97,7 +99,7 @@ function parseStoryboard(content, shotDurations) {
     const shotIndex = shots.length;
     shots.push({
       shotNumber: parseInt(match[1]),
-      duration: fixedDurations[shotIndex] || parseInt(match[2]),
+      duration: shotDurations[shotIndex] || parseInt(match[2]),
       prompt: match[3].trim()
     });
   }

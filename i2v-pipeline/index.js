@@ -1,11 +1,12 @@
 const fs = require('fs');
 const path = require('path');
 const { getAccessToken, queryVideoRecords, updateRecord } = require('./feishu');
-const { understandModelImage } = require('./claude');
 const { generateVideoStoryboard } = require('./ttsv');
+const { generateRefVideoStoryboard } = require('./ttsv-ref');
 const { generateVideo } = require('./veo');
 const { generateApiVideo } = require('./api_video_generation');
 const { generateVideoGrok } = require('./grok');
+const { generateVideoSeedance, generateVideoSeedanceV2V, probeVideoDurationSeconds } = require('./seedance');
 const cloudinaryUtil = require('./cloudinary');
 
 const CONFIG_PATH = path.join(__dirname, '../config.json');
@@ -63,34 +64,53 @@ async function processRecord(config, token, record) {
   const selectedIndex = Math.floor(Math.random() * generatedImgUrls.length);
   const selectedImageUrl = generatedImgUrls[selectedIndex];
   console.log(`[Info] Using image [${selectedIndex + 1}/${generatedImgUrls.length}]: ${selectedImageUrl}`);
-  console.log(`[Info] Product description length: ${productDesc.length}`);
 
   try {
-    // Step 1: Claude analyzes the model image
-    console.log('[Claude] Analyzing model image...');
-    const imageAnalysis = await understandModelImage(config.anthropic, selectedImageUrl, productDesc);
-    console.log('[Claude] Image analysis complete');
-
-    // Step 2: Generate video storyboard using TTSV skill
-    console.log('[TTSV] Generating video storyboard...');
     const modelKey = config.alt_model;
-    const storyboard = await generateVideoStoryboard(config.anthropic, imageAnalysis, productDesc, modelKey);
-    console.log(`[TTSV] Generated ${storyboard.shots.length} shot(s)`);
-
-    // Step 3: Generate video using selected provider
-    const videoConfig = { ...config[modelKey], alt_model: modelKey };
+    const credsKey = modelKey === 'seedance_v2v' ? 'seedance' : modelKey;
+    const videoConfig = { ...config[credsKey], ...config[modelKey], alt_model: modelKey };
     console.log(`[ApiVideo] Using model: ${modelKey}`);
-    const videoPath = modelKey === 'grok'
-      ? await generateVideoGrok(storyboard, selectedImageUrl, videoConfig)
-      : await generateApiVideo(storyboard, selectedImageUrl, videoConfig);
+
+    let videoPath;
+    if (modelKey === 'seedance_v2v') {
+      // Step 1: read reference video from 视频文件 field
+      const refVideoUrl = parseImageUrls(extractTextValue(fields['视频文件']))[0];
+      if (!refVideoUrl) throw new Error('seedance_v2v requires 视频文件 field, but it is empty');
+      console.log(`[Info] Reference video: ${refVideoUrl}`);
+
+      // Step 2: probe reference video duration (fallback to config default)
+      const MODEL_CONFIGS = require('./model-configs.json');
+      const defaultDuration = MODEL_CONFIGS.seedance_v2v.duration;
+      const probed = await probeVideoDurationSeconds(refVideoUrl);
+      const duration = probed || defaultDuration;
+      console.log(`[Info] Duration: ${duration}s (probed=${probed}, default=${defaultDuration})`);
+
+      // Step 3: generate single-shot prompt via ttsv-ref skill
+      console.log('[TTSV-Ref] Generating single-shot prompt...');
+      const storyboard = await generateRefVideoStoryboard(config.anthropic, productDesc, duration);
+
+      // Step 4: call Seedance multimodal
+      videoPath = await generateVideoSeedanceV2V(storyboard, selectedImageUrl, refVideoUrl, videoConfig);
+    } else {
+      // Existing i2v flow
+      console.log('[TTSV] Generating video storyboard...');
+      const storyboard = await generateVideoStoryboard(config.anthropic, productDesc, modelKey);
+      console.log(`[TTSV] Generated ${storyboard.shots.length} shot(s)`);
+
+      videoPath = modelKey === 'grok'
+        ? await generateVideoGrok(storyboard, selectedImageUrl, videoConfig)
+        : modelKey === 'seedance'
+        ? await generateVideoSeedance(storyboard, selectedImageUrl, videoConfig)
+        : await generateApiVideo(storyboard, selectedImageUrl, videoConfig);
+    }
     console.log('[Video] Video generated successfully');
 
-    // Step 4: Upload video to Cloudinary
+    // Step 3: Upload video to Cloudinary
     console.log('[Cloudinary] Uploading video...');
     const videoUrl = await cloudinaryUtil.uploadVideo(videoPath, productId);
     console.log(`[Cloudinary] Video uploaded: ${videoUrl}`);
 
-    // Step 5: Update Feishu record
+    // Step 4: Update Feishu record
     await updateRecord(token, config.bitable.app_token, config.bitable.table_id, recordId, {
       ai_video_urls: videoUrl,
     });

@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 const { getAccessToken } = require('./feishu');
-const { understandModelImage } = require('./claude');
 const { generateVideoStoryboard } = require('./ttsv');
 const fetch = require('node-fetch');
 
@@ -100,14 +99,8 @@ async function reviewRecord(config, token, record, imageIndex = 0) {
   console.log(`\nProduct Description:\n${productDesc}\n`);
 
   try {
-    console.log('[1/2] Analyzing image...');
-    const imageAnalysis = await understandModelImage(config.anthropic, firstImageUrl, productDesc);
-
-    console.log('\n--- Image Analysis ---');
-    console.log(JSON.stringify(imageAnalysis, null, 2));
-
-    console.log('\n[2/2] Generating storyboard...');
-    const storyboard = await generateVideoStoryboard(config.anthropic, imageAnalysis, productDesc);
+    console.log('[1/1] Generating storyboard...');
+    const storyboard = await generateVideoStoryboard(config.anthropic, productDesc);
 
     console.log('\n--- Storyboard ---');
     console.log(storyboard.fullStoryboard);

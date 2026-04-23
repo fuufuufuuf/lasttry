@@ -10,15 +10,15 @@
     "aspect_ratio": "9:16",
     "orientation": "portrait",
     "duration": 15,
-    "shot_durations": [1, 5, 2]
+    "shot_durations": [4, 4]
   },
   "veo_ai666": {
-    "model": "veo",
+    "model": "veo_3_1-fast",
     "size": "720x1280",
     "aspect_ratio": "9:16",
     "orientation": "portrait",
     "duration": 8,
-    "shot_durations": [1, 5, 2]
+    "shot_durations": [4, 4]
   },
   "grok": {
     "model": "grok-video",
@@ -26,6 +26,33 @@
     "aspect_ratio": "9:16",
     "duration": 10,
     "quality": "standard",
-    "shot_durations": [2, 6, 2]
+    "shot_durations": [4, 4]
+  },
+  "jimeng_ai666": {
+    "model": "jimeng-video-3.0",
+    "size": "720P",
+    "aspect_ratio": "9:16",
+    "orientation": "portrait",
+    "duration": 8,
+    "shot_durations": [4, 4]
+  },
+  "seedance": {
+    "model": "dreamina-seedance-2-0-fast-260128",
+    "resolution": "480p",
+    "ratio": "9:16",
+    "duration": 6,
+    "camerafixed": false,
+    "aspect_ratio": "9:16",
+    "orientation": "portrait",
+    "shot_durations": [3, 3]
+  },
+  "seedance_v2v": {
+    "model": "dreamina-seedance-2-0-fast-260128",
+    "resolution": "480p",
+    "ratio": "9:16",
+    "duration": 6,
+    "camerafixed": false,
+    "aspect_ratio": "9:16",
+    "orientation": "portrait"
   }
 }

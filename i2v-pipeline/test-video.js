@@ -16,10 +16,11 @@ const fs = require('fs');
 const path = require('path');
 const fetch = require('node-fetch');
 const { getAccessToken, updateRecord } = require('./feishu');
-const { understandModelImage } = require('./claude');
 const { generateVideoStoryboard } = require('./ttsv');
+const { generateRefVideoStoryboard } = require('./ttsv-ref');
 const { generateApiVideo } = require('./api_video_generation');
 const { generateVideoGrok } = require('./grok');
+const { generateVideoSeedance, generateVideoSeedanceV2V, probeVideoDurationSeconds } = require('./seedance');
 const cloudinaryUtil = require('./cloudinary');
 
 const CONFIG_PATH = path.join(__dirname, '../config.json');
@@ -142,23 +143,21 @@ async function main() {
   const selectedImageUrl = generatedImgUrls[0];
   console.log(`[Info] Selected image: ${selectedImageUrl}\n`);
 
+  const modelKey = config.alt_model;
+
   let storyboard;
-  if (sample) {
+  if (modelKey === 'seedance_v2v') {
+    // v2v path defers storyboard generation into its branch below (needs probed duration).
+    console.log(`[Step 2-3] seedance_v2v mode — storyboard deferred to v2v branch\n`);
+  } else if (sample) {
     const samplePrompt = 'go around and show the outfit';
     storyboard = { shots: [{ shotNumber: 1, duration: 10, prompt: samplePrompt }], totalDuration: 10, fullStoryboard: samplePrompt };
     console.log(`[Step 2-3] Sample mode — using fixed prompt: "${samplePrompt}"\n`);
   } else {
-    // Step 2: Claude image analysis
-    console.log('[Step 2] Claude analyzing image...');
-    const imageAnalysis = await understandModelImage(config.anthropic, selectedImageUrl, productDesc);
-    console.log('[Step 2] Image analysis complete:');
-    console.log(JSON.stringify(imageAnalysis, null, 2));
-    console.log();
-
-    // Step 3: Generate storyboard
-    console.log('[Step 3] Generating video storyboard (TTSV)...');
-    storyboard = await generateVideoStoryboard(config.anthropic, imageAnalysis, productDesc);
-    console.log(`[Step 3] Storyboard generated: ${storyboard.shots.length} shots, ${storyboard.totalDuration}s total`);
+    // Step 2: Generate storyboard
+    console.log('[Step 2] Generating video storyboard (TTSV)...');
+    storyboard = await generateVideoStoryboard(config.anthropic, productDesc);
+    console.log(`[Step 2] Storyboard generated: ${storyboard.shots.length} shots, ${storyboard.totalDuration}s total`);
     storyboard.shots.forEach(shot => {
       console.log(`  Shot ${shot.shotNumber} (${shot.duration}s): ${shot.prompt.substring(0, 100)}...`);
     });
@@ -171,17 +170,41 @@ async function main() {
   }
 
   // Step 4: Generate video
-  console.log(`[Step 4] Generating video (${config.alt_model})...`);
-
-  const modelKey = config.alt_model;
-  if (!config[modelKey]?.alt_api_url || !config[modelKey]?.alt_api_key) {
-    console.error(`[Error] Missing ${modelKey}.alt_api_url or ${modelKey}.alt_api_key in config.json`);
+  console.log(`[Step 4] Generating video (${modelKey})...`);
+  const credsKey = modelKey === 'seedance_v2v' ? 'seedance' : modelKey;
+  if (!config[credsKey]?.alt_api_url || !config[credsKey]?.alt_api_key) {
+    console.error(`[Error] Missing ${credsKey}.alt_api_url or ${credsKey}.alt_api_key in config.json`);
     process.exit(1);
   }
-  const videoConfig = { ...config[modelKey], alt_model: modelKey };
-  const videoPath = modelKey === 'grok'
-    ? await generateVideoGrok(storyboard, selectedImageUrl, videoConfig)
-    : await generateApiVideo(storyboard, selectedImageUrl, videoConfig);
+  const videoConfig = { ...config[credsKey], ...config[modelKey], alt_model: modelKey };
+
+  let videoPath;
+  if (modelKey === 'seedance_v2v') {
+    const refVideoUrl = parseImageUrls(extractTextValue(fields['视频文件']))[0];
+    if (!refVideoUrl) {
+      console.error('[Error] seedance_v2v requires 视频文件 field on this record');
+      process.exit(1);
+    }
+    console.log(`[Info] Reference video: ${refVideoUrl}`);
+
+    const MODEL_CONFIGS = require('./model-configs.json');
+    const defaultDuration = MODEL_CONFIGS.seedance_v2v.duration;
+    const probed = await probeVideoDurationSeconds(refVideoUrl);
+    const duration = probed || defaultDuration;
+    console.log(`[Info] Duration: ${duration}s (probed=${probed}, default=${defaultDuration})`);
+
+    const refStoryboard = sample
+      ? { fullStoryboard: `[Video Prompt] — ${duration}s\nPrompt: sample ref prompt`, shots: [{ shotNumber: 1, duration, prompt: 'sample ref prompt' }], totalDuration: duration }
+      : await generateRefVideoStoryboard(config.anthropic, productDesc, duration);
+
+    videoPath = await generateVideoSeedanceV2V(refStoryboard, selectedImageUrl, refVideoUrl, videoConfig);
+  } else {
+    videoPath = modelKey === 'grok'
+      ? await generateVideoGrok(storyboard, selectedImageUrl, videoConfig)
+      : modelKey === 'seedance'
+      ? await generateVideoSeedance(storyboard, selectedImageUrl, videoConfig)
+      : await generateApiVideo(storyboard, selectedImageUrl, videoConfig);
+  }
   console.log(`[Step 4] Video saved to: ${videoPath}\n`);
 
   // Step 5: Upload to Cloudinary
