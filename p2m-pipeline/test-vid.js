@@ -30,27 +30,31 @@ function extractTextValue(field) {
   return String(field);
 }
 
-// Pull the first usable URL from a Feishu field. Handles attachment arrays,
-// text arrays, and plain string fields.
 function extractFirstImageUrl(field) {
-  if (!field) return null;
+  const urls = extractAllImageUrls(field);
+  return urls[0] || null;
+}
+
+// Pull all usable URLs from a Feishu field, preserving order.
+function extractAllImageUrls(field) {
+  if (!field) return [];
   if (Array.isArray(field)) {
+    const urls = [];
     for (const item of field) {
       if (!item) continue;
-      if (typeof item === 'string' && item.startsWith('http')) return item;
-      if (typeof item === 'object') {
+      if (typeof item === 'string' && item.startsWith('http')) {
+        urls.push(item);
+      } else if (typeof item === 'object') {
         const direct = item.url || item.tmp_url;
-        if (direct) return direct;
-        if (item.text && typeof item.text === 'string') {
-          const urls = parseImageUrls(item.text);
-          if (urls.length > 0) return urls[0];
+        if (direct) urls.push(direct);
+        else if (item.text && typeof item.text === 'string') {
+          urls.push(...parseImageUrls(item.text));
         }
       }
     }
-    return null;
+    return urls;
   }
-  const urls = parseImageUrls(extractTextValue(field));
-  return urls[0] || null;
+  return parseImageUrls(extractTextValue(field));
 }
 
 async function queryByVid(token, appToken, tableId, vid) {

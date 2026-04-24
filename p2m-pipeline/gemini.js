@@ -38,7 +38,7 @@ function isPortrait916(width, height) {
 }
 
 // Generate a new p2m image from a model scene reference + a product reference.
-// Image 1 = model scene photo (identity, body, pose, framing authority)
+// Image 1 = model scene photo (body + lower-crop + scene-category authority)
 // Image 2 = product photo (garment color + construction authority)
 // Output is always 9:16.
 async function generateModelImage(apiKey, modelImgUrl, productImgUrl) {
@@ -47,13 +47,11 @@ async function generateModelImage(apiKey, modelImgUrl, productImgUrl) {
 
   const ai = new GoogleGenAI({ apiKey });
 
-  // Download both references
   const [model, product] = await Promise.all([
     urlToBase64(modelImgUrl),
     urlToBase64(productImgUrl),
   ]);
 
-  // Order matters: Image 1 = model (first), Image 2 = product (second)
   const contents = [
     { inlineData: { data: model.base64,   mimeType: model.mimeType } },
     { inlineData: { data: product.base64, mimeType: product.mimeType } },

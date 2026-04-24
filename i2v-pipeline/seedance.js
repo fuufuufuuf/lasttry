@@ -1,4 +1,5 @@
-const fs = require('fs').promises;
+const fs = require('fs');
+const fsp = fs.promises;
 const path = require('path');
 const axios = require('axios');
 const util = require('util');
@@ -30,25 +31,22 @@ async function probeVideoDurationSeconds(url) {
  * Endpoints:
  *   POST {alt_api_url}/contents/generations/tasks
  *   GET  {alt_api_url}/contents/generations/tasks/{id}
- * Parameter tags (--resolution, --ratio, --duration, --camerafixed) live inside the text prompt.
+ * Uses Ark's new parameter method: resolution / ratio / duration are top-level
+ * body fields (not --tags in the prompt). camera_fixed is not supported by
+ * Seedance 2.0 and is intentionally omitted.
  */
 async function generateVideoSeedance(storyboard, firstImageUrl, config) {
   const tempDir = path.join(__dirname, 'temp', Date.now().toString());
-  await fs.mkdir(tempDir, { recursive: true });
+  await fsp.mkdir(tempDir, { recursive: true });
 
   try {
     const modelConfig = MODEL_CONFIGS['seedance'];
     if (!modelConfig) throw new Error('Missing "seedance" entry in model-configs.json');
 
-    const tags = [
-      `--resolution ${modelConfig.resolution}`,
-      `--ratio ${modelConfig.ratio}`,
-      `--duration ${modelConfig.duration}`,
-      `--camerafixed ${modelConfig.camerafixed}`,
-    ].join(' ');
-    const fullPrompt = `${storyboard.fullStoryboard} ${tags}`;
+    const fullPrompt = storyboard.fullStoryboard;
 
     console.log(`[Seedance] Generating video with model: ${modelConfig.model}`);
+    console.log(`[Seedance] Params: resolution=${modelConfig.resolution} ratio=${modelConfig.ratio} duration=${modelConfig.duration}`);
     console.log(`[Seedance] Prompt: ${fullPrompt}`);
 
     const requestPayload = {
@@ -57,6 +55,10 @@ async function generateVideoSeedance(storyboard, firstImageUrl, config) {
         { type: 'text', text: fullPrompt },
         { type: 'image_url', image_url: { url: firstImageUrl }, role: 'reference_image' },
       ],
+      resolution: modelConfig.resolution,
+      ratio: modelConfig.ratio,
+      duration: Number(modelConfig.duration),
+      generate_audio: false,
     };
 
     console.log('[Seedance] Submitting video generation request...');
@@ -114,7 +116,7 @@ async function generateVideoSeedance(storyboard, firstImageUrl, config) {
 
   } catch (err) {
     try {
-      await fs.rmdir(tempDir, { recursive: true });
+      await fsp.rmdir(tempDir, { recursive: true });
     } catch (cleanupErr) {
       console.error('[Seedance] Cleanup error:', cleanupErr.message);
     }
@@ -171,7 +173,7 @@ async function downloadVideo(url, filepath) {
     timeout: 600000,
   });
 
-  const writeStream = require('fs').createWriteStream(filepath);
+  const writeStream = fs.createWriteStream(filepath);
   response.data.pipe(writeStream);
 
   return new Promise((resolve, reject) => {
@@ -186,25 +188,21 @@ async function downloadVideo(url, filepath) {
  */
 async function generateVideoSeedanceV2V(storyboard, firstImageUrl, refVideoUrl, config) {
   const tempDir = path.join(__dirname, 'temp', Date.now().toString());
-  await fs.mkdir(tempDir, { recursive: true });
+  await fsp.mkdir(tempDir, { recursive: true });
 
   try {
     const modelConfig = MODEL_CONFIGS['seedance_v2v'];
     if (!modelConfig) throw new Error('Missing "seedance_v2v" entry in model-configs.json');
 
     // Prefer the storyboard's probed duration; fall back to the config default.
-    const duration = storyboard?.totalDuration || modelConfig.duration;
+    // Seedance 2.0 duration valid range is [4, 15]; clamp to satisfy strict validation.
+    const rawDuration = Number(storyboard?.totalDuration || modelConfig.duration);
+    const duration = Math.min(15, Math.max(4, Math.round(rawDuration)));
 
-    const tags = [
-      `--resolution ${modelConfig.resolution}`,
-      `--ratio ${modelConfig.ratio}`,
-      `--duration ${duration}`,
-      `--camerafixed ${modelConfig.camerafixed}`,
-    ].join(' ');
-    const fullPrompt = `${storyboard.fullStoryboard} ${tags}`;
+    const fullPrompt = storyboard.fullStoryboard;
 
     console.log(`[Seedance-V2V] Generating video with model: ${modelConfig.model}`);
-    console.log(`[Seedance-V2V] Duration: ${duration}s`);
+    console.log(`[Seedance-V2V] Params: resolution=${modelConfig.resolution} ratio=${modelConfig.ratio} duration=${duration}`);
     console.log(`[Seedance-V2V] Prompt: ${fullPrompt}`);
 
     const requestPayload = {
@@ -214,11 +212,13 @@ async function generateVideoSeedanceV2V(storyboard, firstImageUrl, refVideoUrl, 
         { type: 'image_url', image_url: { url: firstImageUrl }, role: 'reference_image' },
         { type: 'video_url', video_url: { url: refVideoUrl }, role: 'reference_video' },
       ],
+      resolution: modelConfig.resolution,
+      ratio: modelConfig.ratio,
+      duration,
+      generate_audio: false,
     };
 
     console.log('[Seedance-V2V] Submitting video generation request...');
-    console.log(`[Seedance-V2V] Endpoint: ${config.alt_api_url}/contents/generations/tasks`);
-    console.log(`[Seedance-V2V] Request payload: ${JSON.stringify(requestPayload, null, 2)}`);
 
     const maxRetries = 3;
     let lastError;
@@ -273,7 +273,7 @@ async function generateVideoSeedanceV2V(storyboard, firstImageUrl, refVideoUrl, 
 
   } catch (err) {
     try {
-      await fs.rmdir(tempDir, { recursive: true });
+      await fsp.rmdir(tempDir, { recursive: true });
     } catch (cleanupErr) {
       console.error('[Seedance-V2V] Cleanup error:', cleanupErr.message);
     }
