@@ -7,6 +7,7 @@ const { generateVideo } = require('./veo');
 const { generateApiVideo } = require('./api_video_generation');
 const { generateVideoGrok } = require('./grok');
 const { generateVideoSeedance, generateVideoSeedanceV2V, probeVideoDurationSeconds } = require('./seedance');
+const { muxAudio, hasAudioStream } = require('./audio');
 const cloudinaryUtil = require('./cloudinary');
 
 const CONFIG_PATH = path.join(__dirname, '../config.json');
@@ -36,6 +37,36 @@ function extractTextValue(field) {
     return field.map((item) => (typeof item === 'object' ? item.text || '' : item)).join('\n');
   }
   return String(field);
+}
+
+// Extract the audio URL from a Feishu `music info` field. The field stores a
+// JSON blob (typically `{ url, title, audio }`); we only need `audio`.
+// Feishu may serialize this as a rich-text array (text + url segments) — we
+// concatenate without newlines so the JSON survives.
+function extractAudioUrlFromMusicInfo(field) {
+  if (!field) return null;
+  let raw;
+  if (typeof field === 'string') {
+    raw = field;
+  } else if (Array.isArray(field)) {
+    raw = field.map((item) => {
+      if (typeof item === 'string') return item;
+      if (item && typeof item === 'object') return item.text || item.link || '';
+      return '';
+    }).join('');
+  } else {
+    raw = String(field);
+  }
+  if (!raw) return null;
+  try {
+    const obj = JSON.parse(raw);
+    if (obj && typeof obj === 'object' && typeof obj.audio === 'string' && obj.audio.startsWith('http')) {
+      return obj.audio;
+    }
+  } catch (_) {
+    if (raw.startsWith('http')) return raw;
+  }
+  return null;
 }
 
 async function processRecord(config, token, record) {
@@ -104,6 +135,24 @@ async function processRecord(config, token, record) {
         : await generateApiVideo(storyboard, selectedImageUrl, videoConfig);
     }
     console.log('[Video] Video generated successfully');
+
+    // Seedance generates silent videos (generate_audio: false). If the record has
+    // music metadata in the `music_info` field (JSON blob with an `audio` URL),
+    // mux that mp3 onto the video before uploading. First verify the generated
+    // video really is silent — never overwrite an audio stream the model gave us.
+    if (modelKey === 'seedance' || modelKey === 'seedance_v2v') {
+      const audioUrl = extractAudioUrlFromMusicInfo(fields['music info']);
+      if (audioUrl) {
+        const alreadyHasAudio = await hasAudioStream(videoPath);
+        if (alreadyHasAudio) {
+          console.log('[Audio] Generated video already has an audio stream; skipping mux');
+        } else {
+          videoPath = await muxAudio(videoPath, audioUrl);
+        }
+      } else {
+        console.log('[Audio] No music_info.audio on record; uploading video as-is');
+      }
+    }
 
     // Step 3: Upload video to Cloudinary
     console.log('[Cloudinary] Uploading video...');
