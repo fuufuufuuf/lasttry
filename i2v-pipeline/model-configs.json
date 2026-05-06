@@ -4,28 +4,12 @@
     "timeout": 120000,
     "max_retries": 3
   },
-  "grok_ai666": {
-    "model": "grok-video-3",
-    "size": "1080P",
-    "aspect_ratio": "9:16",
-    "orientation": "portrait",
-    "duration": 15,
-    "shot_durations": [4, 4]
-  },
   "veo_ai666": {
     "model": "veo_3_1-fast",
     "size": "720x1280",
     "aspect_ratio": "9:16",
     "orientation": "portrait",
     "duration": 8,
-    "shot_durations": [4, 4]
-  },
-  "grok": {
-    "model": "grok-video",
-    "size": "720x1280",
-    "aspect_ratio": "9:16",
-    "duration": 10,
-    "quality": "standard",
     "shot_durations": [4, 4]
   },
   "jimeng_ai666": {

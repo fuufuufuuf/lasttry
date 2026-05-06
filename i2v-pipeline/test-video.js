@@ -19,7 +19,6 @@ const { getAccessToken, updateRecord } = require('./feishu');
 const { generateVideoStoryboard } = require('./ttsv');
 const { generateRefVideoStoryboard } = require('./ttsv-ref');
 const { generateApiVideo } = require('./api_video_generation');
-const { generateVideoGrok } = require('./grok');
 const { generateVideoSeedance, generateVideoSeedanceV2V, probeVideoDurationSeconds } = require('./seedance');
 const cloudinaryUtil = require('./cloudinary');
 
@@ -199,9 +198,7 @@ async function main() {
 
     videoPath = await generateVideoSeedanceV2V(refStoryboard, selectedImageUrl, refVideoUrl, videoConfig);
   } else {
-    videoPath = modelKey === 'grok'
-      ? await generateVideoGrok(storyboard, selectedImageUrl, videoConfig)
-      : modelKey === 'seedance'
+    videoPath = modelKey === 'seedance'
       ? await generateVideoSeedance(storyboard, selectedImageUrl, videoConfig)
       : await generateApiVideo(storyboard, selectedImageUrl, videoConfig);
   }

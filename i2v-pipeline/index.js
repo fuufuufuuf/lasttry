@@ -5,7 +5,6 @@ const { generateVideoStoryboard } = require('./ttsv');
 const { generateRefVideoStoryboard } = require('./ttsv-ref');
 const { generateVideo } = require('./veo');
 const { generateApiVideo } = require('./api_video_generation');
-const { generateVideoGrok } = require('./grok');
 const { generateVideoSeedance, generateVideoSeedanceV2V, probeVideoDurationSeconds } = require('./seedance');
 const { muxAudio, hasAudioStream } = require('./audio');
 const cloudinaryUtil = require('./cloudinary');
@@ -128,9 +127,7 @@ async function processRecord(config, token, record) {
       const storyboard = await generateVideoStoryboard(config.anthropic, productDesc, modelKey);
       console.log(`[TTSV] Generated ${storyboard.shots.length} shot(s)`);
 
-      videoPath = modelKey === 'grok'
-        ? await generateVideoGrok(storyboard, selectedImageUrl, videoConfig)
-        : modelKey === 'seedance'
+      videoPath = modelKey === 'seedance'
         ? await generateVideoSeedance(storyboard, selectedImageUrl, videoConfig)
         : await generateApiVideo(storyboard, selectedImageUrl, videoConfig);
     }
@@ -174,12 +171,13 @@ async function processRecord(config, token, record) {
 
   } catch (err) {
     console.error(`[Error] Failed to process record: ${err.message}`);
-    // Update Feishu record with N/A on failure
+    const reason = String(err?.message || err).slice(0, 500);
     try {
       await updateRecord(token, config.bitable.app_token, config.bitable.table_id, recordId, {
         ai_video_urls: 'N/A',
+        '备注': `[${new Date().toISOString()}] ${reason}`,
       });
-      console.log('[Feishu] Record updated with N/A due to failure');
+      console.log('[Feishu] Record updated with N/A and failure reason in 备注');
     } catch (updateErr) {
       console.error(`[Error] Failed to update record as N/A: ${updateErr.message}`);
     }

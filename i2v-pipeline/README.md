@@ -8,7 +8,7 @@ Generates fashion-marketing short videos from product records in a Feishu/Lark b
 Feishu bitable
   └─ for each unprocessed record
        ├─ generate prompt (Claude via skills/ttsv or skills/ttsv-ref)
-       ├─ generate video (one of: seedance / seedance_v2v / grok / *_ai666)
+       ├─ generate video (one of: seedance / seedance_v2v / *_ai666)
        ├─ upload to Cloudinary
        └─ write video URL back to the record
 ```
@@ -28,8 +28,6 @@ The active provider is chosen by `config.alt_model` (a single string). Each prov
 |---|---|---|---|
 | `seedance` | i2v | [seedance.js](seedance.js) | BytePlus Ark — Dreamina Seedance 2.0 fast, image-to-video |
 | `seedance_v2v` | v2v | [seedance.js](seedance.js) | Seedance 2.0 multimodal: image + reference video → video |
-| `grok` | i2v | [grok.js](grok.js) | xAI Grok video |
-| `grok_ai666` | i2v | [api_video_generation.js](api_video_generation.js) | Grok via the ai666 aggregator |
 | `veo_ai666` | i2v | [api_video_generation.js](api_video_generation.js) | Veo 3.1 via the ai666 aggregator |
 | `jimeng_ai666` | i2v | [api_video_generation.js](api_video_generation.js) | Jimeng 3.0 via the ai666 aggregator |
 
@@ -54,7 +52,7 @@ Before muxing, the pipeline verifies the generated video is actually silent (`ff
 
 - Use the [`ttsv`](../skills/ttsv/SKILL.md) skill to generate a multi-shot storyboard from `product_desc` / `product_title`.
 - Pick a random image from `generated_img_url` as the first-frame reference.
-- All providers in this branch use `generateApiVideo` except `grok` (which has its own client) and `seedance` (which uses BytePlus Ark directly).
+- All providers in this branch use `generateApiVideo` except `seedance` (which uses BytePlus Ark directly).
 
 ## Required Feishu fields
 
@@ -85,12 +83,11 @@ Before muxing, the pipeline verifies the generated video is actually silent (`ff
   },
   "cloudinary": { "cloud_name": "...", "api_key": "...", "api_secret": "..." },
 
-  "alt_model": "seedance_v2v",   // or seedance / grok / *_ai666
+  "alt_model": "seedance_v2v",   // or seedance / *_ai666
 
   "seedance":     { "alt_api_url": "https://ark.ap-southeast.bytepluses.com/api/v3", "alt_api_key": "..." },
   "veo_ai666":    { "alt_api_url": "https://ai.ai666.net/v1", "alt_api_key": "..." },
-  "jimeng_ai666": { "alt_api_url": "https://ai.ai666.net/v1", "alt_api_key": "..." },
-  "grok_ai666":   { "alt_api_url": "https://ai.ai666.net/v1", "alt_api_key": "..." }
+  "jimeng_ai666": { "alt_api_url": "https://ai.ai666.net/v1", "alt_api_key": "..." }
 }
 ```
 

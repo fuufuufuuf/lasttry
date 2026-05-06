@@ -6,7 +6,7 @@ const MODEL_CONFIGS = require('./model-configs.json');
 /**
  * Unified video generation via the ai666-style API (POST /video/create + poll /video/query).
  * Used by any model whose entry lives in model-configs.json and whose config section
- * provides alt_api_url + alt_api_key. Currently: veo_ai666, grok_ai666.
+ * provides alt_api_url + alt_api_key. Currently: veo_ai666, jimeng_ai666.
  *
  * Model-specific parameters (size, duration, etc.) are read from model-configs.json by key.
  */

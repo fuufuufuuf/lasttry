@@ -7,6 +7,23 @@ const execFile = util.promisify(require('child_process').execFile);
 const MODEL_CONFIGS = require('./model-configs.json');
 
 /**
+ * Extract a human-readable error message from a failed Seedance API call.
+ * Prefers the structured `error.code` + `error.message` from the response body
+ * (e.g. "InputVideoSensitiveContentDetected.PrivacyInformation: ..."), falling
+ * back to the raw response data, then to the bare axios message.
+ */
+function describeApiError(err) {
+  const apiErr = err?.response?.data?.error;
+  if (apiErr?.code || apiErr?.message) {
+    return `${apiErr.code || 'APIError'}: ${apiErr.message || ''}`.trim();
+  }
+  if (err?.response?.data) {
+    return `${err.message} — ${JSON.stringify(err.response.data)}`;
+  }
+  return err?.message || String(err);
+}
+
+/**
  * Probe a video URL's duration with ffprobe. Returns rounded integer seconds,
  * or null if ffprobe is unavailable / the URL is unreadable.
  */
@@ -100,7 +117,7 @@ async function generateVideoSeedance(storyboard, firstImageUrl, config) {
     }
 
     if (!taskId) {
-      throw new Error(`Failed to submit Seedance video task after ${maxRetries} attempts: ${lastError.message}`);
+      throw new Error(`Failed to submit Seedance video task after ${maxRetries} attempts: ${describeApiError(lastError)}`);
     }
 
     const videoUrl = await pollSeedance(config, taskId);
@@ -257,7 +274,7 @@ async function generateVideoSeedanceV2V(storyboard, firstImageUrl, refVideoUrl, 
     }
 
     if (!taskId) {
-      throw new Error(`Failed to submit Seedance v2v task after ${maxRetries} attempts: ${lastError.message}`);
+      throw new Error(`Failed to submit Seedance v2v task after ${maxRetries} attempts: ${describeApiError(lastError)}`);
     }
 
     const videoUrl = await pollSeedance(config, taskId);
