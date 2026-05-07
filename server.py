@@ -64,6 +64,7 @@ async def run_pipeline(task_id: str, pipeline: str):
                 decoded = line.decode("utf-8", errors="replace")
                 output_lines.append(decoded)
                 tasks[task_id]["logs"] = "".join(output_lines)
+                print(f"[{pipeline}:{task_id[:8]}] {decoded}", end="", flush=True)
 
             await proc.wait()
 
