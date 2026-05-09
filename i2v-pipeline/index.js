@@ -7,6 +7,7 @@ const { generateVideo } = require('./veo');
 const { generateApiVideo } = require('./api_video_generation');
 const { generateVideoSeedance, generateVideoSeedanceV2V, probeVideoDurationSeconds } = require('./seedance');
 const { muxAudio, hasAudioStream } = require('./audio');
+const { buildNewTitleForFields } = require('./regen-title');
 const cloudinaryUtil = require('./cloudinary');
 
 const CONFIG_PATH = path.join(__dirname, '../config.json');
@@ -156,11 +157,25 @@ async function processRecord(config, token, record) {
     const videoUrl = await cloudinaryUtil.uploadVideo(videoPath, productId);
     console.log(`[Cloudinary] Video uploaded: ${videoUrl}`);
 
-    // Step 4: Update Feishu record
+    // Step 3.5: Regenerate video_title (best-effort; never fails the record).
+    // Bundles into the same Feishu update as ai_video_urls so we save one round trip.
+    const extraUpdate = {};
+    try {
+      const newTitle = await buildNewTitleForFields(fields);
+      if (newTitle) {
+        extraUpdate.video_title = newTitle;
+        console.log(`[Title] Regenerated: ${newTitle}`);
+      }
+    } catch (titleErr) {
+      console.warn(`[Warn] Title regen failed: ${titleErr.message} — keeping original title`);
+    }
+
+    // Step 4: Update Feishu record (ai_video_urls + optional new video_title)
     await updateRecord(token, config.bitable.app_token, config.bitable.table_id, recordId, {
       ai_video_urls: videoUrl,
+      ...extraUpdate,
     });
-    console.log('[Done] Feishu record updated with video URL');
+    console.log('[Done] Feishu record updated with video URL' + (extraUpdate.video_title ? ' + new title' : ''));
 
     // Cleanup temp video file
     if (fs.existsSync(videoPath)) {
